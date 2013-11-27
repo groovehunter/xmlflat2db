@@ -47,6 +47,17 @@ class SourceScan:
         else:
             self.src_cur = None
 
+    def source_dump_first(self):
+        con = file(self.src_cur, 'r').readlines()
+        if con:
+            for line in con:
+                try:
+                    print line
+                except:
+                    print "cannot print that line"
+            return True
+        return False
+
 
     def source_cur_checkvalid(self):
         """ pruefe ob erstes file okay ist """

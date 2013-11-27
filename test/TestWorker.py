@@ -7,6 +7,7 @@ class TestWorker(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.mc.src_cur = self.mc.src_main_dir+testfile
+        self.mc.source_dump_first()
         self.mc.keep_in_memory = True
         self.mc.work()
 

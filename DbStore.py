@@ -117,7 +117,10 @@ class DbStore(object):
         except UnicodeEncodeError, e:
             print "DbStore, def insert; unicode error", str(e)
             #self.missed.append[ data[self.keyname] ]
+            print self.sql
             print data_store.data[self.keyname]
+            data_store.dump()
+            sys.exit(1)
             return False
         except:
             print self.sql
