@@ -1,0 +1,23 @@
+
+src_main_dir: /path/to/sources
+
+
+DATASET_TAG: customer
+
+test: test
+
+typ_store: informix
+#typ_store: sqlite
+
+db:
+    dbname: 
+    dbuser: 
+    dbpass: 
+
+
+    tablename : kunden
+    keyname   : coid
+
+
+
+

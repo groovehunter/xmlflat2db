@@ -1,0 +1,21 @@
+
+src_main_dir:  /path/
+
+
+DATASET_TAG: customer
+
+test: test
+
+typ_store: informix
+
+db:
+    dbname: 
+    dbuser: 
+    dbpass: 
+
+    tablename : kunden
+    keyname   : coid
+
+
+
+

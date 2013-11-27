@@ -1,0 +1,139 @@
+### === SOURCE fields
+
+fields_src_seen:
+  - aktdatum
+  - adresstyp
+  - berater
+  - eintrittsdatum
+  - fachrichtung
+  - fax
+  - hausnr
+  - kinderarzt
+  - kundenid
+  - kundenkurz
+  - kundennr
+  - laborid
+  - land
+  - name
+  - ort
+  - plz
+  - strasse
+  - status
+  - telefon
+  - titel
+  - transitid
+  - vorname
+  - zeile2
+  - zeile3
+  - zeile4
+
+
+fields_src_never_in: 
+  - 
+
+fields_src_operation:
+  - status
+
+
+# semantically date fields, but parsing with strf needed to be date 
+fields_src_typed_data:
+  - eintrittsdatum
+
+
+
+### === DESTINATION fields
+
+field_autoinc: coid
+
+# field combo which has to be unique, check for update vs insert
+fields_unique:
+  - laborid
+  - kundenid
+
+# keys NEVER to set, just leave them on insert
+fields_dest_ignore_always:
+  - gpslaenge
+  - gpsgemessen
+  - gpsbreite
+
+# all date fields except for auto fields
+fields_typed_date:
+  - aktdatum
+  - eintrittsdatum
+  - adrgeaendert
+
+# fields to set by calculation, no influence from data_in  
+fields_auto:
+  - kor_name
+  - kor_time
+  - erf_name
+  - erf_time
+
+# dest table, keys which have to be set
+fields_not_null:
+#  - coid
+  - laborid
+  - kundenid
+  - name
+  - ort
+  - plz
+  - strasse
+
+
+# all keys of destination table without exception, abc ordered
+# just the PK at the beginning
+fields_dest_all: 
+  - coid
+
+  - adresszusatz
+  - adrgeaendert
+  - aktdatum
+  - anrede
+  - berater
+  - eintrittsdatum
+  - fachrichtung
+  - gpsbreite
+  - gpsgemessen
+  - gpslaenge
+  - kinderarzt
+  - kommentar
+  - kundenid
+  - kundenklasse
+  - kundenkurz
+  - kundennr
+  - laborid
+  - land
+  - name
+  - ort
+  - plz
+  - postanschrift
+  - postfach
+  - strasse
+  - suchname
+  - suchort
+  - suchstrasse
+  - titel
+  - transitid
+  - typ
+  - vorname
+  - zeile2
+  - zeile3
+  - zeile4
+  - ziellabor
+
+
+fields_table_kontakt:
+  - email
+  - fax
+  - mobilnr
+  - telefon
+
+
+
+# XXX not used yet, generic field data structure
+fields:
+  - kor_name:
+    - typ: string
+    - len: 4
+    - null: true
+# END
