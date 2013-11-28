@@ -55,7 +55,7 @@ class DbStore(object):
         amax = maximal[0]
         if not amax:
             amax = 0
-        print "MAX ID "+str(amax)
+        #print "MAX ID "+str(amax)
         return int(amax)
 
 

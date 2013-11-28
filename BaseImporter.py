@@ -4,10 +4,13 @@ import subprocess
 from DummyStore import DummyStore
 from SourceScan import SourceScan
 from Datensatz import Datensatz, DataStore
+from lxml import etree
+from lxml.etree import iterparse, XMLSyntaxError, ParseError
 import yaml
 
 
 class MissingDataException(Exception):  pass
+class ImporterError(Exception):         pass
 
 
 class BaseImporter(SourceScan):
@@ -109,14 +112,28 @@ class BaseImporter(SourceScan):
 
 
 
+    def parse(self):
+        """ parse current source file, check encoding """
+        try:
+            tree = etree.parse(self.src_cur)
+            self.encoding = tree.docinfo.encoding
+            self.root = tree.getroot()
+        except ParseError:
+            raise ImporterError
+
+
+
     def work(self):
         """ work on xml data source and call store workers 
             sollte success=True zurueckgeben wenn datei
             zufriedenstellend verarbeitet wurde (was heisst das?)
         """
 
-        from lxml import etree
-        from lxml.etree import iterparse, XMLSyntaxError
+        try:
+            self.parse()
+        except ImporterError:
+            # hier merken die failed files.
+            pass
 
         data = {}
         keys_collect = []
@@ -127,6 +144,8 @@ class BaseImporter(SourceScan):
         ### here
         self.init_db(self.config['db'])
         
+        tree = etree.parse(self.src_cur)
+        self.encodig = tree.docinfo.encoding
         xmlfile = open(self.src_cur)
         with xmlfile as xml_doc:
             context = iterparse(xml_doc, events=("start", "end"))
@@ -228,6 +247,7 @@ class BaseImporter(SourceScan):
 
         # berechne fehlende Felder des DS
         self.fields_calc()
+        self.data_in = data_in
         # a) auto felder
         self.set_fields_auto()
         # b) aus quell-daten
@@ -235,13 +255,14 @@ class BaseImporter(SourceScan):
         # d) vielleicht-felder aus source , jetzt?
         # e) aktuelle autoinc id 
 
+        # f) dest-felder die aus quellfeldern berechnet werden
+        self.fields2calc()
 
-        self.data_in = data_in
         self.fields_do_transfer()
         # setzt op in data_store auch?
 
         # rufe store backend prozedur auf
-        #self.data_store.dump()
+        self.data_store.dump()
         self.operate()
         # pruefe ob vollstaendige verarbeitung
         self.num_ds_written += 1
@@ -285,6 +306,19 @@ class BaseImporter(SourceScan):
                 raise MissingDataException
 
 
+    def fields2calc(self):
+        """ wende verarbeitungsfunktion an auf div.konfigurierte felder """
+        for calc in self.config_importer['fields2calc']:
+
+            for pair in calc['field_map_dict'].items():
+                #sval = calc['mapfunc']( field_map.keys()[0] )
+                exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
+                exec exstr
+                print "%s | %s" %(self.data_in.data[pair[1]], sval)
+                self.data_store.set_field( pair[0], sval )
+
+
+
     def fields_do_transfer(self):
         """ kopieren aller restlichen felder die nicht anderweitig
             behandelt werden """
@@ -292,7 +326,11 @@ class BaseImporter(SourceScan):
             data = self.data_in.data
             if fn in data:
                 val = data[fn]
-                self.data_store.set_field(fn, val)
+                sval = val
+                # alter spacko , denk nich so kompliziert
+                #if self.encoding == 'ISO-8859-1':
+                sval = val.encode('utf8')
+                self.data_store.set_field(fn, sval)
             else:   
                 pass
                 # XXX store in cloud :)

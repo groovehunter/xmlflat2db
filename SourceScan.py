@@ -1,6 +1,7 @@
 import os
 import subprocess
 from time import sleep
+from lxml import etree
 
 
 class SourceScan:
@@ -47,6 +48,8 @@ class SourceScan:
         else:
             self.src_cur = None
 
+    # das is ja das allerletzte. XML zeilenweise dumpen BUH flo!!
+    '''
     def source_dump_first(self):
         con = file(self.src_cur, 'r').readlines()
         if con:
@@ -57,6 +60,7 @@ class SourceScan:
                     print "cannot print that line"
             return True
         return False
+    '''
 
 
     def source_cur_checkvalid(self):
@@ -69,6 +73,10 @@ class SourceScan:
             return True
         else:
             return False
+
+
+    def source_cur_dump(self):
+        etree.dump(self.root)
 
 
     def no_files_left(self):

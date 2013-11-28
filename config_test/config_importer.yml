@@ -43,11 +43,21 @@ fields_src_typed_data:
 
 ### === DESTINATION fields
 
-fields_autoinc: coid
+fields2calc:
+  calc1:
+    - suchname: name
+    - suchstrasse: strasse
+    - suchort: ort
+
+  calc2:
+    - bla: blub
+
+
+field_autoinc: coid
+
 # field combo which has to be unique, check for update vs insert
-fields_unique:
-  - laborid
-  - kundenid
+fields_unique: [laborid, kundenid]
+
 
 # keys NEVER to set, just leave them on insert
 fields_dest_ignore_always:
@@ -62,8 +72,7 @@ fields_typed_date:
   - adrgeaendert
 
 # fields to set by calculation, no influence from data_in  
-fields_auto:
-  - autotest
+fields_auto: [ kor_time, kor_name, erf_time, erf_name ]
 
 # dest table, keys which have to be set
 fields_not_null:

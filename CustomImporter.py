@@ -1,4 +1,5 @@
 import sys, os
+from stringutils import suchString
 
 # eine ebene hoeher um xmlflat2db importieren zu koennen
 bpath = os.path.abspath(os.path.dirname(__file__)+"../../")
@@ -79,6 +80,14 @@ class CustomImporter(BaseImporter):
     def field_handler_erf_time(self):
         if self.operation == 'insert':
             self.data_store.set_field('erf_name', now())
+
+
+    def suchString(self, val):
+        return suchString( val )
+
+
+
+
 
 
 

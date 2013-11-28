@@ -7,12 +7,12 @@ class TestWorker(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.mc.src_cur = self.mc.src_main_dir+testfile
-        self.mc.source_dump_first()
         self.mc.keep_in_memory = True
         self.mc.work()
 
         first = self.mc.data_array.items()[0]
-        self.mc.data_in = first
+        #print str(first)
+        self.mc.data_in = first[1]
 
         ### ab hier work_ds prozedur =   self.mc.work_ds(first)
 

@@ -3,6 +3,11 @@
 
 import unicodedata
 from unidecode import unidecode
+from string import punctuation
+
+
+
+# http://www.tablix.org/~avian/blog/archives/2009/01/unicode_transliteration_in_python/
 
 
 def suchString(inp):
@@ -20,11 +25,23 @@ def suchString(inp):
     key = key.replace(u"Ü", u"Ue")
     key = key.replace(u"ß", u"ss")
 
-    norm= unicodedata.normalize('NFKD', key).encode('ascii','ignore')
-    #print norm
+    #key = key.translate(None, ''' -_!"'§$%&/()=''')
+    #out = key.translate(' .,;#+*´`}{[]-_!"§$%&/()=')
+    # not possible even if i encode to ascii, i cannot translate 
+    # sth to '' nothing, which is what is wanted.
 
-    upp = norm.upper()
-    #print upp    
+    #[ c.replace(a, '') for a in key ]
+    new = ''
+    for c in key:
+        if c in punctuation:
+            new += ''
+        else:
+            new += c
+
+    new = new.replace(' ','')
+    #norm= unicodedata.normalize('NFKD', key).encode('ascii','ignore')
+    upp = unidecode(new)
+    upp = upp.upper()
 
     return upp
     

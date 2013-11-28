@@ -63,39 +63,35 @@ class TestStore(TestWorker):
         storetest_ok = False
         self.mc.store.connect()
 
-        print self.mc.config
         self.mc.fields_calc()
         self.mc.set_fields_auto()
-        self.mc.data_in = data_in
         self.mc.fields_do_transfer()
 
-        self.mc.store.query_create_insert()
-
-        self.mc.store.insert()
+        self.mc.operate()
+        #self.mc.store.query_create_insert()
+        #self.mc.store.insert()
         storetest_ok = not self.mc.store.errors
         self.assertTrue(storetest_ok)
 
-    '''
-    def test_insert_doublekey_raise_integrityException(self):
-        self.mc.store.connect()
-        ds = create_test_ds()
-        self.mc.store.keys_to_store = ds.data.keys()
-        self.mc.store.data_store = ds.as_dict()
-        self.mc.store.query_create_insert()
 
-        self.assertRaises( DbStoreError, self.mc.store.insert )
-    '''
 
-    '''
-    def test_store_prepare_and_insert(self):
-        """ gegeb. dict soll query prepared werden und inserted werden """
-        self.mc.store.connect()
-        ds = create_test_ds()
-        self.mc.store.keys_to_store = ds.data.keys()
-        self.mc.store.data_store = ds.as_dict()
-        self.mc.store.query_create_insert()
-        self.assertTrue( self.mc.store.insert() )
-    '''
+#    def test_insert_doublekey_raise_integrityException(self):
+#        self.mc.store.connect()
+#        ds = create_test_ds()
+#        self.mc.store.keys_to_store = ds.data.keys()
+#        self.mc.store.data_store = ds.as_dict()
+#        self.mc.store.query_create_insert()
+#
+#        self.assertRaises( DbStoreError, self.mc.store.insert )
+#
+#    def test_store_prepare_and_insert(self):
+#        """ gegeb. dict soll query prepared werden und inserted werden """
+#        self.mc.store.connect()
+#        ds = create_test_ds()
+#        self.mc.store.keys_to_store = ds.data.keys()
+#        self.mc.store.data_store = ds.as_dict()
+#        self.mc.store.query_create_insert()
+#        self.assertTrue( self.mc.store.insert() )
 
 
 # ds generisch
@@ -135,8 +131,10 @@ class TestStore(TestWorker):
         self.mc.fields_set_not_null()
 
         exist = self.mc.store.exist_keys(data_store, ['kundenid', 'laborid'])
+        self.assertIsNotNone( exist )
 
-        self.assertTrue( False )
+
+
 
 # db backend test suitte
 
