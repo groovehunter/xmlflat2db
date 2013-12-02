@@ -38,8 +38,9 @@ class BaseImporter(SourceScan):
         #pjdir = os.path.abspath(os.path.dirname(__file__))
 
         for fn in cfgs:
-            config_fpath = self.dir_app +'/config'+self.test+'/'+fn 
-            #print config_fpath
+            config_fpath = '%s/config_%s%s/%s' %(
+                    self.dir_app, self.app_id, self.test, fn) 
+            print config_fpath
             config_txt = file(config_fpath,'r').read()
             config = yaml.load(config_txt)
             cfgkey = fn.split('.')[0]
@@ -314,7 +315,12 @@ class BaseImporter(SourceScan):
                 #sval = calc['mapfunc']( field_map.keys()[0] )
                 exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
                 exec exstr
+
+            try:
                 print "%s | %s" %(self.data_in.data[pair[1]], sval)
+            except:
+                pass
+
                 self.data_store.set_field( pair[0], sval )
 
 
