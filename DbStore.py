@@ -120,13 +120,12 @@ class DbStore(object):
             #self.missed.append[ data[self.keyname] ]
             print self.sql
             print data_store.data[self.keyname]
+            #data_store.dump()
+            #sys.exit(1)
+            #return False
+        #except:
             data_store.dump()
-            sys.exit(1)
-            return False
-        except:
-            print self.sql
-            data_store.dump()
-            sys.exit(1)
+#            sys.exit(1)
             # XXX return False, caller need to remember missed DS
             # raise DbStoreError # XXX wie geht das? raisen
 
@@ -165,7 +164,6 @@ class DbStore(object):
             return False
         except:
             print self.sql
-            data_store.dump()
             sys.exit(1)
 
 

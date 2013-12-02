@@ -7,11 +7,12 @@ from Datensatz import Datensatz, DataStore
 from lxml import etree
 from lxml.etree import iterparse, XMLSyntaxError, ParseError
 import yaml
-import datetime
+from datetime import datetime
 
 
-class MissingDataException(Exception):  pass
+class MissingDataException(Exception): pass
 class ImporterError(Exception):         pass
+class FormatError(Exception):       pass
 
 
 class BaseImporter(SourceScan):
@@ -41,7 +42,7 @@ class BaseImporter(SourceScan):
         for fn in cfgs:
             config_fpath = '%s/config_%s%s/%s' %(
                     self.dir_app, self.app_id, self.test, fn) 
-            print config_fpath
+            #print config_fpath
             config_txt = file(config_fpath,'r').read()
             config = yaml.load(config_txt)
             cfgkey = fn.split('.')[0]
@@ -257,6 +258,8 @@ class BaseImporter(SourceScan):
 
         # felder mit typ-spezieller sonderbehandlung
         self.fields_typed_date()
+        
+        self.fields_dest_fetch()
 
         # f) dest-felder die aus quellfeldern berechnet werden
         self.fields2calc()
@@ -333,7 +336,7 @@ class BaseImporter(SourceScan):
 
                 self.data_store.set_field( pair[0], sval )
 
-
+### FIELD TYPES                                     ------------------------------------------------------ 
     def fields_typed_date(self):
         """ transferiere felder des typs datum """
         for fn in self.config_importer['fields_typed_date']:
@@ -347,22 +350,26 @@ class BaseImporter(SourceScan):
 
     def prep_date(self, v):
         """ if data in US format, convert to custom """
-        # XXX move date format setting in custom importer 
-        #print v
         try:
             d = datetime.strptime(v, self.config_importer['format_date_src'])
-            return d.strftime(self.config_importer['format_date_dest'])
+            return d
 
-        except:
-            #d = datetime.strptime(v, '%Y-%m-%dT%I:%M:%S+02:00')
+        except ValueError:
+        
             try:
-                dform = '%Y-%m-%dT%H:%M:%S+02:00'
+                dform = '%Y-%m-%dT%H:%M:%S+01:00'
                 d = datetime.strptime(v, dform)
-            except:
-                return v
-            return d.strftime(self.config_importer['format_date_dest'])
+                return d.strftime(self.config_importer['format_date_dest'])
+            except ValueError:
+                raise FormatError
 
 
+    def fields_dest_fetch(self):
+        """ spezielle felder in dest sollen aus mehreren src feldern errechnet werden """
+        if self.config_importer['fields_dest_fetch']:
+            for fetch in self.config_importer['fields_dest_fetch']:
+                print fetch
+                # XXX 
 
 
     def fields_do_transfer(self):
@@ -436,9 +443,16 @@ class BaseImporter(SourceScan):
         for fn in fields_tmp_dest_all_possible:
             if not fn in self.config_importer['fields_src_never_in']:
                 fields_tmp.append(fn)
-
         fields_wanted = fields_tmp
-        self.fields_transfer = fields_wanted
+
+        # von den generell wanted fields entferne die date-type felder
+        fields_tmp = []
+        for fn in fields_wanted:
+            if not fn in self.config_importer['fields_typed_date']:
+                fields_tmp.append(fn)
+        fields_wanted_wo_date = fields_tmp
+                
+        self.fields_transfer = fields_wanted_wo_date
         #print str(fields_tmp)
 
 

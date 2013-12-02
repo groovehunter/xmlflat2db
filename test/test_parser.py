@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 
+
+
 from TestBase import TestBase
+
+from BaseImporter import FormatError
+
+
+
 
 class TestParser(TestBase):
 
@@ -53,6 +60,10 @@ class TestParser(TestBase):
         self.assertTrue( self.mc.data_array )   # not empty
 
 
+    def testDatePrep(self):
+        """ date literal not according to configured format raises exception """
+        self.assertRaises(FormatError, self.mc.prep_date, '2342348927')
+        
 
     # XXX die work bzw iter schleife ueberarbeiten
     '''

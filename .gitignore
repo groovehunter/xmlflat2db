@@ -2,5 +2,5 @@
 *.pyc
 *.swp
 *.swo
-config_mc
+config_mc*
 config_test

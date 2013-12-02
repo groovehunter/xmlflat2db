@@ -11,7 +11,8 @@ class TestImporter(BaseImporter):
     def __init__(self):
         self.dir_app = os.path.abspath(os.path.dirname(__file__))
         BaseImporter.__init__(self)
-        self.test = '_mc'   # temp
+        self.app_id = 'test'
+        self.test = '_test'   # temp
 
 
     def run(self):
