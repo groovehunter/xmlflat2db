@@ -153,18 +153,18 @@ class DbStore(object):
             return True
         # XXX a new cursor?
         cursor = self.conn.cursor()
-
+        #print self.sql
         try:
-            cursor.execute( self.sql ) #, self.data_store.data )
+            cursor.execute( self.sql, self.data_store.data )
             return True
 
         except UnicodeEncodeError, e:
             print "DbStore, def update; unicode error", str(e)
             #self.missed.append[ data[self.keyname] ]
             return False
-        except:
-            print self.sql
-            sys.exit(1)
+        #except:
+        #    print "UP: " +self.sql
+        #    sys.exit(1)
 
 
     def query_create_update(self):
@@ -174,9 +174,12 @@ class DbStore(object):
         keys_query.sort()
         e = ''
         for key in keys_query:
-            t = "%s='%s'," %(key,self.data_store.data[key])
+            #t = "%s='%s'," %(key,self.data_store.data[key])
+            t = "%s=:%s, " %(key,key)
             e += t
-        e = e.rstrip(',')
+        #e = e.rstrip(',')
+        e= e[:-2]
+
         self.sql = 'UPDATE %s SET %s WHERE %s=%s' %(
             self.tablename, e, self.keyname, self.data_store.data[self.keyname])
 

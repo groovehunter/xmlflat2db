@@ -251,25 +251,27 @@ class BaseImporter(SourceScan):
         self.data_in = data_in
         # a) auto felder
         # e) aktuelle autoinc id 
-        self.set_fields_auto()
+        self.set_field_autoinc()
         # b) aus quell-daten
         # c) muss-felder = none null felder 1:1
         # d) vielleicht-felder aus source , jetzt?
 
         # felder mit typ-spezieller sonderbehandlung
         self.fields_typed_date()
-        
-        self.fields_dest_fetch()
+        self.fields_typed_bool() 
 
         # f) dest-felder die aus quellfeldern berechnet werden
         self.fields2calc()
+        self.fields_dest_fetch()
         # g) felder fuer subtabellen, inkl operation ausfuehren (?)
 
         # alle weiteren felder
         self.fields_do_transfer()
 
         # setze operation attributes XXX nicht schlau
+        # AB HIER ist operation bekannt 
         self.set_operation_final(self.data_store)
+        self.set_fields_auto()
         #self.fields_to_subtables()
 
 
@@ -302,6 +304,8 @@ class BaseImporter(SourceScan):
             for key in fields_auto:
                 eval('self.field_handler_'+key+'()')
 
+
+    def set_field_autoinc(self):
         # auto inc id im data store setzen
         id_cur = self.id_max + self.id_tmp
         self.data_store.set_field( self.config_importer['field_autoinc'], 
@@ -325,7 +329,6 @@ class BaseImporter(SourceScan):
         for calc in self.config_importer['fields2calc']:
 
             for pair in calc['field_map_dict'].items():
-                #sval = calc['mapfunc']( field_map.keys()[0] )
                 exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
                 exec exstr
 
@@ -347,6 +350,19 @@ class BaseImporter(SourceScan):
             else:
                 pass  # log XXX
 
+    def fields_typed_bool(self):
+        for fn in self.config_importer['fields_typed_bool']:
+            data = self.data_in.data
+            if fn in data:
+                if data[fn] == 'true':
+                    self.data_store.set_field(fn, True)
+                elif data[fn] == 'false':
+                    self.data_store.set_field(fn, False)
+                else:
+                    self.data_store.set_field(fn, None)
+            else:
+                pass # wie oben, kann eigentlich nicht passieren(?)     
+        
 
     def prep_date(self, v):
         """ if data in US format, convert to custom """
@@ -363,12 +379,25 @@ class BaseImporter(SourceScan):
             except ValueError:
                 raise FormatError
 
+    def api_src_key_exists(self, key):
+        """ return bool if a key exists in the src """
+        return key in self.data_in.data and self.data_in.data[key]
+
+    def api_get(self, key):
+        return self.data_in.data[key]
+
+    def api_set(self, key, val):
+        """ setze feld auf wert in dest dict """
+        self.data_store.set_field(key, val)
+
 
     def fields_dest_fetch(self):
-        """ spezielle felder in dest sollen aus mehreren src feldern errechnet werden """
+        """ spezielle felder in dest sollen aus mehreren src feldern 
+            errechnet werden """
         if self.config_importer['fields_dest_fetch']:
             for fetch in self.config_importer['fields_dest_fetch']:
-                print fetch
+                key = fetch.keys()[0]
+                eval('self.field_handler_'+key+'()')
                 # XXX 
 
 

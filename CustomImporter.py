@@ -81,8 +81,16 @@ class CustomImporter(BaseImporter):
         if self.operation == 'insert':
             self.data_store.set_field('erf_name', now())
 
+    def field_handler_transitid(self):
+        if not self.api_src_key_exists('transitid'):
+            laborid     = self.api_get('laborid')
+            kundenid    = self.api_get('kundenid')
+            val = '%s_%s_000' %(laborid[0], kundenid.zfill(6))
+            self.api_set('transitid', val)
+
 
     def suchString(self, val):
+        """ custom mapping func for some fields """
         return suchString( val )
 
 
