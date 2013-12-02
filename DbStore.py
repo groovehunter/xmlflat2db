@@ -104,6 +104,7 @@ class DbStore(object):
     def insert(self):
         """ speicher in DB """
         data_store = self.data_store
+        print self.sql
 
         if self.dry:
             return True

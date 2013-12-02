@@ -21,7 +21,7 @@ class CustomImporter(BaseImporter):
 
     def __init__(self):
         self.dir_app = os.path.abspath(os.path.dirname(__file__))
-        self.test = '_mc'
+        self.app_id = 'mc'
         BaseImporter.__init__(self)
 
 
