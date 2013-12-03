@@ -59,17 +59,42 @@ class DbStore(object):
         return int(amax)
 
 
-    def exists(self):
+    def selectall(self):
+        """ Abfrage eines kompletten Datensatzes anhand key, vorbereiteter query """
+        self.cursor = self.conn.cursor()
+        self.cursor.execute( self.sql )
+        res = self.cursor.fetchone()
+        if not res:
+            return None
+        return res[0]
+        
+
+    def query_create_select_all(self, keys, uid):
+        """ create SELECT ALL statement dynamicall dependent on keys """
+        e = ''
+        keys.sort()
+        for k in keys:
+            e += str(k)
+            e += ','
+        e = e.rstrip(',')
+        self.sql = 'SELECT %s FROM %s WHERE %s=%s' %(e, self.tablename,
+                    self.keyname, uid)
+#        print self.sql
+
+
+    def exists(self, data_store):
         """ check if a dataset with the given key already exists """
 
+        # XXX wenn coid key nicht existiert? in ds??
         self.cursor = self.conn.cursor()
+        print data_store.data
         sql = 'select %s from %s where %s=%s' %(
             self.keyname, self.tablename,
-            self.keyname, self.data[self.keyname])
+            self.keyname, data_store.data[self.keyname])
 
         self.cursor.execute( sql )
         res = self.cursor.fetchone()
-        print self.keyname+" exists yet? "+str(res)
+        #print "dataset with coid "+self.keyname+" exists yet? "+str(res)
         if not res:
             return False
         return True
@@ -85,7 +110,7 @@ class DbStore(object):
             sql = sql[:-4]
 
         else:
-            sql += "%s='%s'" %(key, data[key])
+            sql += "%s='%s'" %(key, data_store.data[key])
 
         self.cursor.execute(sql)
         res = self.cursor.fetchone()
@@ -101,10 +126,10 @@ class DbStore(object):
         self.data_store = data_store
         pass
 
-    def insert(self):
+    def insert(self, data_store):
         """ speicher in DB """
-        data_store = self.data_store
-        print self.sql
+        #data_store = self.data_store
+        #print self.sql
 
         if self.dry:
             return True
@@ -130,11 +155,11 @@ class DbStore(object):
             # raise DbStoreError # XXX wie geht das? raisen
 
 
-    def query_create_insert(self):
+    def query_create_insert(self, data_store):
         """ create INSERT statement dynamicall dependent on keys """
         e = ''
         v = ''
-        keys = self.data_store.data.keys()
+        keys = data_store.data.keys()
         keys.sort()
         for k in keys:
             v += ':'
@@ -147,15 +172,17 @@ class DbStore(object):
 
         self.sql = 'INSERT INTO %s (%s) VALUES (%s)' %(self.tablename, e, v)
 
-    def update(self):
+
+    def update(self, data_store):
         """ speicher in DB """
         if self.dry:
             return True
         # XXX a new cursor?
         cursor = self.conn.cursor()
+        #self.data_store.dump()
         #print self.sql
         try:
-            cursor.execute( self.sql, self.data_store.data )
+            cursor.execute( self.sql, data_store.data )
             return True
 
         except UnicodeEncodeError, e:
@@ -167,9 +194,10 @@ class DbStore(object):
         #    sys.exit(1)
 
 
-    def query_create_update(self):
+    def query_create_update(self, data_store):
         """ prepare update query, keys are from source dataset """
-        keys_query = self.data_store.data.keys()
+        keys_query = data_store.data.keys()
+        #print keys_query
         keys_query.remove(self.keyname)
         keys_query.sort()
         e = ''
@@ -181,5 +209,5 @@ class DbStore(object):
         e= e[:-2]
 
         self.sql = 'UPDATE %s SET %s WHERE %s=%s' %(
-            self.tablename, e, self.keyname, self.data_store.data[self.keyname])
+            self.tablename, e, self.keyname, data_store.data[self.keyname])
 

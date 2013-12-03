@@ -12,6 +12,8 @@ from string import punctuation
 
 def suchString(inp):
     """ aus nicht-ascii-chars syscomp-suchkonforme strings machen 
+        inp: unicode string
+        returns: ??
     """
     # zuerst replace von Umlauten mit Umschrift, bzw ss 
     # dann unicodedata.normalize
@@ -40,7 +42,11 @@ def suchString(inp):
 
     new = new.replace(' ','')
     #norm= unicodedata.normalize('NFKD', key).encode('ascii','ignore')
-    upp = unidecode(new)
+    if type(new) == type(u''):
+        upp = unidecode(new)
+    else:   # fallback
+        upp = new
+        
     upp = upp.upper()
 
     return upp

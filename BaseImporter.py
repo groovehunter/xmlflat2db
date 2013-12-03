@@ -15,6 +15,14 @@ class ImporterError(Exception):         pass
 class FormatError(Exception):       pass
 
 
+## helper functs
+def now():
+    now = datetime.now()
+    #now_iso = datetime.isoformat(now)
+    return now #now_iso
+
+
+
 class BaseImporter(SourceScan):
 
     def __init__(self):
@@ -248,10 +256,11 @@ class BaseImporter(SourceScan):
 
         # berechne fehlende Felder des DS
         self.fields_calc()
+
         self.data_in = data_in
         # a) auto felder
         # e) aktuelle autoinc id 
-        self.set_field_autoinc()
+        self.field_autoinc()
         # b) aus quell-daten
         # c) muss-felder = none null felder 1:1
         # d) vielleicht-felder aus source , jetzt?
@@ -263,18 +272,19 @@ class BaseImporter(SourceScan):
         # f) dest-felder die aus quellfeldern berechnet werden
         self.fields2calc()
         self.fields_dest_fetch()
-        # g) felder fuer subtabellen, inkl operation ausfuehren (?)
 
         # alle weiteren felder
         self.fields_do_transfer()
 
-        # setze operation attributes XXX nicht schlau
+
         # AB HIER ist operation bekannt 
         self.set_operation_final(self.data_store)
-        self.set_fields_auto()
-        #self.fields_to_subtables()
+        self.fields_auto()
 
+        # g) felder fuer subtabellen, inkl operation ausfuehren (?)
+        self.fields_to_subtables()
 
+        self.fields_encode_all()
         ### === storage 
         # setzt op in data_store auch?
 
@@ -288,6 +298,7 @@ class BaseImporter(SourceScan):
 
     def initDataStore(self):
         self.data_store = DataStore()
+        self.data_existing = DataStore()
 
 
     def report_manual_todo(self):
@@ -297,19 +308,45 @@ class BaseImporter(SourceScan):
         return True
 
 
-    def set_fields_auto(self):
+    
+
+    def fields_encode_all(self):
+        """ encode all text fields finally in data_store to desired db encoding """
+        ds_keys = self.data_store.data.keys()
+        for key in self.config_importer['fields_typed_date']:
+            if key in ds_keys:
+                ds_keys.remove(key)
+        for key in self.config_importer['fields_typed_bool']:
+            if key in ds_keys:
+                ds_keys.remove(key)
+        for key in self.config_importer['fields_typed_int']:
+            if key in ds_keys:
+                ds_keys.remove(key)
+                
+        for key in ds_keys:
+            #print key
+            self.data_store.data[key] = self.data_store.data[key].encode('utf8')
+#            self.data_store.data[key] = self.data_store.data[key].encode('iso8859-5')
+#            self.data_store.data[key] = self.data_store.data[key].encode('iso8859-5')
+
+
+
+    def fields_auto(self):
         """ setze auto-felder """
         fields_auto = self.config_importer['fields_auto']
         if fields_auto:
             for key in fields_auto:
-                eval('self.field_handler_'+key+'()')
+                hdl = "self.field_handler_"+key+"()"
+                #print "call handler: ",hdl
+                eval(hdl)
 
 
-    def set_field_autoinc(self):
+    def field_autoinc(self):
         # auto inc id im data store setzen
         id_cur = self.id_max + self.id_tmp
         self.data_store.set_field( self.config_importer['field_autoinc'], 
             id_cur)
+        self.id_cur = id_cur
 
 
     def fields_set_not_null(self):
@@ -332,11 +369,10 @@ class BaseImporter(SourceScan):
                 exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
                 exec exstr
 
-                try:
-                    print "%s | %s" %(self.data_in.data[pair[1]], sval)
-                except:
-                    pass
-
+                #try:
+                #    print "%s | %s" %(self.data_in.data[pair[1]], sval)
+                #except:
+                #    pass
                 self.data_store.set_field( pair[0], sval )
 
 ### FIELD TYPES                                     ------------------------------------------------------ 
@@ -377,14 +413,46 @@ class BaseImporter(SourceScan):
                 d = datetime.strptime(v, dform)
                 return d.strftime(self.config_importer['format_date_dest'])
             except ValueError:
-                raise FormatError
+                # XXX log
+                #raise FormatError
+                return None
+                
 
+    def get_existing(self):
+        """ load existing data from DB, return True or False for match """
+        uid = self.data_store.data[self.config['db']['keyname']]
+
+        self.store.query_create_select_all(self.config_importer['fields_dest_all'], uid)
+        res = self.store.selectall()
+        if res:
+            self.data_existing.data = res[0]
+            return True
+        else:
+            return False
+
+
+    def api_check_anyfield_changed(self, keys):
+        """ checks if any field given has changed compared to existing data or None 
+            if no data existed yet """
+        found = self.get_existing()
+        if not found:
+            return None
+        
+        changed = False
+        for key in keys:
+            if self.data_existing.data[key] != self.data_in.data[key]:
+                changed = True
+        return changed
+    
+    
     def api_src_key_exists(self, key):
         """ return bool if a key exists in the src """
         return key in self.data_in.data and self.data_in.data[key]
 
+
     def api_get(self, key):
         return self.data_in.data[key]
+
 
     def api_set(self, key, val):
         """ setze feld auf wert in dest dict """
@@ -408,7 +476,10 @@ class BaseImporter(SourceScan):
             data = self.data_in.data
             if fn in data:
                 val = data[fn]
-                sval = val.encode('utf8')
+#                sval = val.encode('iso-8859-5')
+ #               sval = val.encode('utf8')
+                sval = val
+                ### leave here for unicode
                 self.data_store.set_field(fn, sval)
             else:   
                 pass
@@ -418,37 +489,26 @@ class BaseImporter(SourceScan):
     def fields_to_subtables(self):
         """ create data stores to write to subtables with 
             relation to main table """
-        sub_store = {}
+        #sub_store = {}
         
         for sub in self.config_importer['fields_to_subtables']:
+            #print sub
             table_name = sub['table']
-
-            sub_store[table_name] = DataStore()
-
-            # loopen aller felder der sub config
-            for field_name in sub['fields']:
-                if field_name in self.data_in.data:
-                    val = self.data_in.data[field_name]
-                    sub_store[table_name].set_field( field_name, val )
-
-            # forein key set always
-            # XXX rechte coid herausfinden, entscheidung auf operation!
-            keyname = self.config_importer['keyname']
-            val_pk = self.data_store.data[keyname]
-            sub_store[table_name].set_field( keyname, val_pk )
-            sub_store[table_name].dump()
+            exec('sub_store = self.handler_'+table_name+'(sub["fields"])')
 
             self.store.tablename = table_name
-            #self.operate( sub_store[table_name] )
-            self.store.set_data_store(sub_store[table_name])
-
             #if self.data_store.action == 'update':
-            if self.operation == 'update':
-                self.update()
+            if self.store.exists(sub_store): # and self.operation == 'update':
+                self.store.query_create_update(sub_store)
+                self.store.update(sub_store)
+
+            else:
             #if self.data_store.action == 'insert':
-            if self.operation == 'insert':
-                self.insert()
-            print "sub store op done: "+self.operation
+#            if self.operation == 'insert':
+                self.store.query_create_insert(sub_store)
+                self.store.insert(sub_store)
+
+            #print "sub store op done: "+self.operation
         # re-set store 
         self.store.tablename = self.config['db']['tablename']
 
@@ -484,10 +544,26 @@ class BaseImporter(SourceScan):
         self.fields_transfer = fields_wanted_wo_date
         #print str(fields_tmp)
 
+        fields_tmp = []
+        for fn in fields_wanted_wo_date:
+            if not fn in self.config_importer['fields_typed_bool']:
+                fields_tmp.append(fn)
+        fields_wanted_wo_datebool = fields_tmp
+                
+        fields_tmp = []
+        for fn in fields_wanted_wo_datebool:
+            if not fn in self.config_importer['fields_typed_int']:
+                fields_tmp.append(fn)
+        fields_wanted_wo_dateboolint = fields_tmp
+
+# ###   self.fields_transfer = fields_wanted_wo_date
+        self.fields_transfer = fields_wanted_wo_dateboolint
+        #print str(fields_tmp)
+        
 
     def set_operation_final(self, data_store):
         # entscheide ob insert oder update
-        self.data_store.dump()
+        #self.data_store.dump()
         if self.store.exist_keys( data_store, 
                                 self.config_importer['fields_unique'] ):
             self.operation = 'update'
@@ -497,23 +573,25 @@ class BaseImporter(SourceScan):
 
     def operate(self, data_store):
         # uebergebe data_store and store
-        self.store.set_data_store(data_store)
+        #self.store.set_data_store(data_store)
 
         if self.operation == 'update':
-            self.update()
+            self.update(data_store)
         elif self.operation == 'insert':
-            self.insert()
+            self.insert(data_store)
         # 
 
 
     # XXX so okay? was ist custom delete zb = update mit status=9
-    def insert(self):
-        self.store.query_create_insert()
-        self.store.insert()
+    def insert(self, data_store):
+        #data_store = self.store.data_store
+        self.store.query_create_insert(data_store)
+        self.store.insert(data_store)
 
-    def update(self):
-        self.store.query_create_update()
-        self.store.update()
+    def update(self, data_store):
+        #data_store = self.store.data_store
+        self.store.query_create_update(data_store)
+        self.store.update(data_store)
 
        
 

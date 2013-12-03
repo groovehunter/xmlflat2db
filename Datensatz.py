@@ -8,7 +8,7 @@ from uuid import uuid1
 attrs_special = [
 'status',
 ]
-
+# XXX beide klassen zusammenlegen
 
 class Datensatz(object):
 
