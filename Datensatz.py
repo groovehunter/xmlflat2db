@@ -68,6 +68,10 @@ class DataStore(object):
         # _all-not-null-fields-ready?_
         # ready-for-saving ?
         self.subkey = 'typ'  # XXX is custom!  
+        
+    def init_custom(self):
+        """ implement in subclass """
+        pass
     
     def set_action(self, action):
         self.action = action
@@ -91,8 +95,8 @@ class DataStore(object):
         self.dumpw(self.data, keys)
         #keys = ['coid','typ','kontakt']
         #self.dumpw(self.data_sub, keys)
-        print len(self.data_subitems)
-        print self.data_subitems
+        print "Anzahl subelemente: ", len(self.data_subitems)
+        #print self.data_subitems
         
 
     def dump(self):

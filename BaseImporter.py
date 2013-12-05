@@ -251,7 +251,7 @@ class BaseImporter(SourceScan):
         # setzt aktions-feld im data_store
         self.set_operation(data_in)
         self.data_in = data_in
-
+        #print data_in.data
 
         ### === fields 
         # werte weitere wichtige felder aus
@@ -270,7 +270,8 @@ class BaseImporter(SourceScan):
 
         # felder mit typ-spezieller sonderbehandlung
         self.fields_typed_date()
-        self.fields_typed_bool() 
+        self.fields_typed_bool()
+        self.fields_typed_int()
 
         # f) dest-felder die aus quellfeldern berechnet werden
         self.fields2calc()
@@ -279,9 +280,9 @@ class BaseImporter(SourceScan):
         # alle weiteren felder
         self.fields_do_transfer()
 
-
-        # AB HIER ist operation bekannt 
+        # AB HIER ist operation bekannt und fields_auto braucht das auch
         self.set_operation_final(self.data_store)
+        self.fields_fix()
         self.fields_auto()
 
         # g) felder fuer subtabellen, inkl operation ausfuehren (?)
@@ -302,6 +303,8 @@ class BaseImporter(SourceScan):
 
     def initDataStore(self):
         self.data_store = DataStore()
+        self.data_store.init_custom()
+
         self.data_existing = DataStore()
 
 
@@ -345,8 +348,8 @@ class BaseImporter(SourceScan):
         """ setze felder mit festen default werten """
         fields_fix = self.config_importer['fields_fix']
         if fields_fix:
-            for key in fields_fix:
-                self.data_store.set_field(key, self.config_importer['fields_fix'])
+            for key in fields_fix.keys():
+                self.data_store.set_field(key, fields_fix[key])
                 
 
     def field_autoinc(self):
@@ -383,7 +386,7 @@ class BaseImporter(SourceScan):
                 #    pass
                 self.data_store.set_field( pair[0], sval )
 
-### FIELD TYPES                                     ------------------------------------------------------ 
+    # ## FIELD TYPES                                     ------------------------------------------------------ 
     def fields_typed_date(self):
         """ transferiere felder des typs datum """
         for fn in self.config_importer['fields_typed_date']:
@@ -394,19 +397,38 @@ class BaseImporter(SourceScan):
             else:
                 pass  # log XXX
 
+    # XXX man koennte pruefen in diesen typ-routinen ob das feld schon behandelt wurde zb mit handler
     def fields_typed_bool(self):
+        """ transferiere felder des typs bool """
         for fn in self.config_importer['fields_typed_bool']:
             data = self.data_in.data
             if fn in data:
+                print data[fn]
                 if data[fn] == 'true':
                     self.data_store.set_field(fn, True)
                 elif data[fn] == 'false':
+                    print "FFF"
                     self.data_store.set_field(fn, False)
                 else:
                     self.data_store.set_field(fn, None)
             else:
                 pass # wie oben, kann eigentlich nicht passieren(?)     
-        
+
+    def fields_typed_int(self):
+        """ transferiere felder des typs integer """
+        for fn in self.config_importer['fields_typed_int']:
+            data = self.data_in.data
+            if fn in data:
+                #print fn, data[fn]
+                try:
+                    sval = int(data[fn])
+                except:
+                    sval = ''
+                    # XXX log here
+                self.data_store.set_field(fn, sval)
+            else:
+                pass  # log XXX
+       
 
     def prep_date(self, v):
         """ if data in US format, convert to custom """
@@ -439,6 +461,7 @@ class BaseImporter(SourceScan):
             return False
 
 
+    # ## api stuff for application subclass MyImporter to use                ------------------------
     def api_check_anyfield_changed(self, keys):
         """ checks if any field given has changed compared to existing data or None 
             if no data existed yet """
@@ -459,6 +482,7 @@ class BaseImporter(SourceScan):
 
 
     def api_get(self, key):
+        """ get a field of data source """ 
         return self.data_in.data[key]
 
 
@@ -484,8 +508,6 @@ class BaseImporter(SourceScan):
             data = self.data_in.data
             if fn in data:
                 val = data[fn]
-#                sval = val.encode('iso-8859-5')
- #               sval = val.encode('utf8')
                 sval = val
                 ### leave here for unicode
                 self.data_store.set_field(fn, sval)
@@ -502,24 +524,7 @@ class BaseImporter(SourceScan):
             table_name = sub['table']
 
             exec('data_store = self.handler_'+table_name+'(sub, data_store)')
-            #print data_store , "IN f2s"
-            '''
-            self.store.tablename = table_name
-            #if self.data_store.action == 'update':
-            if self.store.exists(sub_store): # and self.operation == 'update':
-                self.store.query_create_update(sub_store)
-                self.store.update(sub_store)
-
-            else:
-            #if self.data_store.action == 'insert':
-#            if self.operation == 'insert':
-                self.store.query_create_insert(sub_store)
-                self.store.insert(sub_store)
-
-            #print "sub store op done: "+self.operation
-            '''
-        # re-set store 
-        #self.store.tablename = self.config['db']['tablename']
+ 
         return data_store
 
 

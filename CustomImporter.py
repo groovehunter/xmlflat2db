@@ -14,6 +14,16 @@ from Datensatz import DataStore
 # IDEE XXX have a subclassed DataStore 
 # der weiss wie default fix werte zu setzen sind, erf_time 
 
+class CustomDataStore(DataStore):
+    def __init__(self):
+        DataStore.__init__(self)
+        
+    def init_custom(self):
+        self.data['erf_name'] = 'KOFL'
+        self.data['kor_name'] = 'KOFL'
+        self.data['status'] = u'3'         # XXX Warn, do not set here.
+
+
 
 class CustomImporter(BaseImporter):
 
@@ -24,11 +34,15 @@ class CustomImporter(BaseImporter):
 
 
     def run(self):
+        """ main function for all """
         BaseImporter.run(self)
         
-    #def initDataStore(self):
-        
-
+    # XXX sollte noch rein
+    ''' 
+    def initDataStore(self):
+        self.data_store = CustomDataStore()
+        self.data_store.init_custom()
+    '''
 
     def set_operation(self, data_in):
         """ subclass custom method  
@@ -40,9 +54,11 @@ class CustomImporter(BaseImporter):
         status = data_in.status
         if status == 'A':
             self.operation = 'insert_or_update'
+            self.api_set('status', '3')
 
         elif status == 'H':
             self.operation = 'insert_or_update'
+            self.api_set('status', '3')
 
         elif status == 'X':
             self.operation = 'update'
@@ -50,18 +66,7 @@ class CustomImporter(BaseImporter):
 
         self.data_store.set_action( self.operation )
 
-        '''
-        if self.operation == 'insert_or_update':
-            # check unique keys here
-            # key combos # laborid & kundenid
-            res = self.store.exist_keys(self.data_in.data, ('kundenid','laborid') )
-            if not res:
-                self.operation = 'insert'
-            else:
-                self.data_in.data[self.keyname] = res
-                self.operation = 'update'
-        '''
-        
+          
 
     def field_handler_kor_time(self):
         """ function name wird aufgerufen hier um feld in DS zu fuellen """
@@ -92,6 +97,12 @@ class CustomImporter(BaseImporter):
                 sp = u' '
             str_hnr = strasse+u' '+self.api_get('hausnr') 
             self.api_set('strasse', str_hnr)
+            
+            
+    def field_handler_kundenstatus(self):
+        status = self.api_get('status')
+        print status
+        self.api_set('kundenstatus', status) 
 
 
     def field_handler_adrgeaendert(self):
@@ -120,6 +131,7 @@ class CustomImporter(BaseImporter):
         # alle 0-4 kontaktmoeglichkeiten
         for field_name in fields:
             # wenn feld in input DS vorhanden
+            # XXX subitem als CustomDataStore ??
             subitem = {}
             if field_name in self.data_in.data:
                 subitem['coid'] = data_store.data['coid']
