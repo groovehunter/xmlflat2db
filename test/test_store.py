@@ -133,6 +133,8 @@ class TestStore(TestWorker):
         exist = self.mc.store.exist_keys(data_store, ['kundenid', 'laborid'])
         self.assertIsNotNone( exist )
 
+    def test_createquery:
+        pass
 
 
 

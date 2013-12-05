@@ -82,23 +82,21 @@ class DbStore(object):
 #        print self.sql
 
 
-    def exists(self, data_store):
+    def exists(self, data, tablename):
         """ check if a dataset with the given key already exists """
 
-        # XXX wenn coid key nicht existiert? in ds??
         self.cursor = self.conn.cursor()
-        print data_store.data
         sql = 'select %s from %s where %s=%s' %(
-            self.keyname, self.tablename,
-            self.keyname, data_store.data[self.keyname])
+            self.keyname, tablename,
+            self.keyname, data[self.keyname])
 
         self.cursor.execute( sql )
         res = self.cursor.fetchone()
-        #print "dataset with coid "+self.keyname+" exists yet? "+str(res)
         if not res:
             return False
         return True
 
+    
 
     def exist_keys(self, data_store, keys):
         """ do query for keys with current values """
@@ -126,40 +124,30 @@ class DbStore(object):
         self.data_store = data_store
         pass
 
-    def insert(self, data_store):
-        """ speicher in DB """
-        #data_store = self.data_store
-        #print self.sql
+    def insert(self, data):
+        """ speichern in DB """
 
-        if self.dry:
-            return True
-        # XXX a new cursor?
         cursor = self.conn.cursor()
-
         try:
-            cursor.execute( self.sql, data_store.data )
+            cursor.execute( self.sql, data )
             return True
 
         except UnicodeEncodeError, e:
             print "DbStore, def insert; unicode error", str(e)
             #self.missed.append[ data[self.keyname] ]
             print self.sql
-            print data_store.data[self.keyname]
-            #data_store.dump()
-            #sys.exit(1)
-            #return False
+            print data[self.keyname]
         #except:
-            data_store.dump()
 #            sys.exit(1)
             # XXX return False, caller need to remember missed DS
             # raise DbStoreError # XXX wie geht das? raisen
 
 
-    def query_create_insert(self, data_store):
+    def query_create_insert(self, data, tablename):
         """ create INSERT statement dynamicall dependent on keys """
         e = ''
         v = ''
-        keys = data_store.data.keys()
+        keys = data.keys()
         keys.sort()
         for k in keys:
             v += ':'
@@ -170,19 +158,14 @@ class DbStore(object):
         e = e.rstrip(',')
         v = v.rstrip(',')
 
-        self.sql = 'INSERT INTO %s (%s) VALUES (%s)' %(self.tablename, e, v)
+        self.sql = 'INSERT INTO %s (%s) VALUES (%s)' %(tablename, e, v)
+        
 
-
-    def update(self, data_store):
+    def update(self, data):
         """ speicher in DB """
-        if self.dry:
-            return True
-        # XXX a new cursor?
         cursor = self.conn.cursor()
-        #self.data_store.dump()
-        #print self.sql
         try:
-            cursor.execute( self.sql, data_store.data )
+            cursor.execute( self.sql, data )
             return True
 
         except UnicodeEncodeError, e:
@@ -190,13 +173,11 @@ class DbStore(object):
             #self.missed.append[ data[self.keyname] ]
             return False
         #except:
-        #    print "UP: " +self.sql
-        #    sys.exit(1)
 
 
-    def query_create_update(self, data_store):
+    def query_create_update(self, data, tablename):
         """ prepare update query, keys are from source dataset """
-        keys_query = data_store.data.keys()
+        keys_query = data.keys()
         #print keys_query
         keys_query.remove(self.keyname)
         keys_query.sort()
@@ -209,5 +190,20 @@ class DbStore(object):
         e= e[:-2]
 
         self.sql = 'UPDATE %s SET %s WHERE %s=%s' %(
-            self.tablename, e, self.keyname, data_store.data[self.keyname])
+            tablename, e, self.keyname, data[self.keyname])
 
+
+    def query_create_delete(self, data, tablename):
+        """ delete entry in subtable """
+        self.sql = "DELETE FROM %s WHERE %s=%s" %(
+                 tablename, self.keyname, data[self.keyname] )
+                
+
+    def delete(self):
+        print self.sql
+        cursor = self.conn.cursor()
+        cursor.execute( self.sql )
+        
+        
+        
+        

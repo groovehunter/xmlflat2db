@@ -11,6 +11,10 @@ from xmlflat2db.BaseImporter import BaseImporter, now
 from Datensatz import DataStore
 
 
+# IDEE XXX have a subclassed DataStore 
+# der weiss wie default fix werte zu setzen sind, erf_time 
+
+
 class CustomImporter(BaseImporter):
 
     def __init__(self):
@@ -21,6 +25,9 @@ class CustomImporter(BaseImporter):
 
     def run(self):
         BaseImporter.run(self)
+        
+    #def initDataStore(self):
+        
 
 
     def set_operation(self, data_in):
@@ -39,7 +46,7 @@ class CustomImporter(BaseImporter):
 
         elif status == 'X':
             self.operation = 'update'
-            self.api_set('status', 9)
+            self.api_set('status', '9')
 
         self.data_store.set_action( self.operation )
 
@@ -61,19 +68,13 @@ class CustomImporter(BaseImporter):
         dn = now()
         self.data_store.set_field('kor_time', dn)
 
-    # XXX fix values -> config
-    def field_handler_kor_name(self):
-        val = u'KOFL' 
-        self.data_store.set_field('kor_name', val)
-
-    def field_handler_erf_name(self):
-        if self.operation == 'insert':
-            self.data_store.set_field('erf_name', u'KOFL')
 
     def field_handler_erf_time(self):
+        """ setze zeit wenn insert modus """
         if self.operation == 'insert':
             dn = now()
-            self.data_store.set_field('erf_name', dn)
+            self.data_store.set_field('erf_time', dn)
+
 
     def field_handler_transitid(self):
         if not self.api_src_key_exists('transitid'):
@@ -108,42 +109,44 @@ class CustomImporter(BaseImporter):
         return suchString( val )
 
 
-    def handler_kontakt(self, fields):
-        keyname = self.config['db']['keyname']
-        sub_store = DataStore()
-        table_name = 'kontakt'
-        try:
-            print self.data_store.data['name']
-        except:
-            pass # lol
+    def handler_kontakt(self, sub, data_store):
+        """ process sub datasets of type kontakt 
+            @return data_store
+        """
+        fields = sub['fields']
+        keyname = sub['fk']
+#        keyname = self.config['db']['keyname']
+        data_store.table_sub = sub['table']
         # alle 0-4 kontaktmoeglichkeiten
         for field_name in fields:
             # wenn feld in input DS vorhanden
+            subitem = {}
             if field_name in self.data_in.data:
-                sub_store.set_field( keyname, self.data_store.data[keyname] )
-                sub_store.set_field( 'typ', field_name[:3] )
-                sub_store.set_field( 'kontakt', self.data_in.data[field_name] )
-                sub_store.set_field( 'status', '3' )
-                #sub_store.dump()
-        return sub_store
+                subitem['coid'] = data_store.data['coid']
+                subitem['typ']  = field_name[:3]
+                subitem['kontakt'] = self.data_in.data[field_name]
+                subitem['status']  = '3'
+                
+                data_store.add_data_sub(subitem)
+                
+        return data_store
 
 
     def field_handler_suchname(self):
-        sname = self.suchString( self.data_in.data['name'] )
-         
-        z2 = self.suchString( self.data_in.data['zeile2'] )
-        for w in self.config_importer['mylist01']:
-            z2 = z2.replace(w,'')
+        #print self.data_in.data.keys()
+        tmp2 = self.data_in.data['name']
+        if 'vorname' in self.data_in.data:
+            tmp2 += self.data_in.data['vorname']
         
-        z3 = self.suchString( self.data_in.data['zeile3'] )
+        for i in range(2,4):
+            key = 'zeile'+str(i)
+            if key in self.data_in.data:
+                tmp2 += self.data_in.data[key]
+                
+        v2 = self.suchString( tmp2 )
+        #print v2
 
-        gname = sname+z2
-        if not (z3.find('MEDIZIN') or z3.find('ARZT')):
-            gname += z3
-
-        for w in self.config_importer['mylist02']:
-            gname = gname.replace(w,'')
-        self.data_store.set_field('suchname', gname)
+        self.data_store.set_field('suchname', v2)
         
 
 

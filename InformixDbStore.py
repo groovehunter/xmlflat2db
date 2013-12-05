@@ -44,18 +44,7 @@ class InformixDbStore(DbStore):
         return True
         
 
-    def delete(self):
-        """ setze db-status auf 9 fuer datensatz """
-        # XXX syscomp custom, move to custom importer
-        sql = "update %s set %s=%s where %s=%s" %(
-            self.tablename, 
-            key, self.data[key], 
-            self.keyname, data[self.keyname])
-        print sql
-        self.cursor.execute(sql)
-
-
-#       except IntegrityError, e:
+ #       except IntegrityError, e:
     def errorhandler(connection, cursor, errorclass, errorvalue):
         print "errorclass: "+str(errorclass)
         print "errorvalue: "+str(errorvalue)

@@ -154,8 +154,11 @@ class BaseImporter(SourceScan):
 
         ### here
         self.init_db(self.config['db'])
-        
-        tree = etree.parse(self.src_cur)
+        try:
+            tree = etree.parse(self.src_cur)
+        except:
+            # XXX handle exception 
+            return False
         self.encodig = tree.docinfo.encoding
         xmlfile = open(self.src_cur)
         with xmlfile as xml_doc:
@@ -247,6 +250,7 @@ class BaseImporter(SourceScan):
 
         # setzt aktions-feld im data_store
         self.set_operation(data_in)
+        self.data_in = data_in
 
 
         ### === fields 
@@ -257,7 +261,6 @@ class BaseImporter(SourceScan):
         # berechne fehlende Felder des DS
         self.fields_calc()
 
-        self.data_in = data_in
         # a) auto felder
         # e) aktuelle autoinc id 
         self.field_autoinc()
@@ -282,12 +285,13 @@ class BaseImporter(SourceScan):
         self.fields_auto()
 
         # g) felder fuer subtabellen, inkl operation ausfuehren (?)
-        self.fields_to_subtables()
+        self.data_store = self.fields_to_subtables(self.data_store)
 
+        #print self.data_store
         self.fields_encode_all()
         ### === storage 
         # setzt op in data_store auch?
-
+        self.data_store.dump2()
         # operation im DB backend auf den weg bringen
         self.operate( self.data_store )
         # pruefe ob vollstaendige verarbeitung
@@ -326,9 +330,6 @@ class BaseImporter(SourceScan):
         for key in ds_keys:
             #print key
             self.data_store.data[key] = self.data_store.data[key].encode('utf8')
-#            self.data_store.data[key] = self.data_store.data[key].encode('iso8859-5')
-#            self.data_store.data[key] = self.data_store.data[key].encode('iso8859-5')
-
 
 
     def fields_auto(self):
@@ -340,9 +341,16 @@ class BaseImporter(SourceScan):
                 #print "call handler: ",hdl
                 eval(hdl)
 
+    def fields_fix(self):
+        """ setze felder mit festen default werten """
+        fields_fix = self.config_importer['fields_fix']
+        if fields_fix:
+            for key in fields_fix:
+                self.data_store.set_field(key, self.config_importer['fields_fix'])
+                
 
     def field_autoinc(self):
-        # auto inc id im data store setzen
+        """ auto inc id im data store setzen """
         id_cur = self.id_max + self.id_tmp
         self.data_store.set_field( self.config_importer['field_autoinc'], 
             id_cur)
@@ -486,16 +494,16 @@ class BaseImporter(SourceScan):
                 # XXX store in cloud :)
 
 
-    def fields_to_subtables(self):
+    def fields_to_subtables(self, data_store):
         """ create data stores to write to subtables with 
             relation to main table """
-        #sub_store = {}
         
         for sub in self.config_importer['fields_to_subtables']:
-            #print sub
             table_name = sub['table']
-            exec('sub_store = self.handler_'+table_name+'(sub["fields"])')
 
+            exec('data_store = self.handler_'+table_name+'(sub, data_store)')
+            #print data_store , "IN f2s"
+            '''
             self.store.tablename = table_name
             #if self.data_store.action == 'update':
             if self.store.exists(sub_store): # and self.operation == 'update':
@@ -509,8 +517,10 @@ class BaseImporter(SourceScan):
                 self.store.insert(sub_store)
 
             #print "sub store op done: "+self.operation
+            '''
         # re-set store 
-        self.store.tablename = self.config['db']['tablename']
+        #self.store.tablename = self.config['db']['tablename']
+        return data_store
 
 
 
@@ -585,13 +595,42 @@ class BaseImporter(SourceScan):
     # XXX so okay? was ist custom delete zb = update mit status=9
     def insert(self, data_store):
         #data_store = self.store.data_store
-        self.store.query_create_insert(data_store)
-        self.store.insert(data_store)
+        self.store.query_create_insert(data_store.data, self.config['db']['tablename'])
+        self.store.insert(data_store.data)
+        
+        if data_store.data_subitems:
+            
+            for subitem in data_store.data_subitems.values():
+                print "SUB insert"
+
+                # wenn sub mit coid schon existiert: loeschen und neu anlegen
+                if self.store.exists(subitem, self.config['db']['subtablename']):
+                    self.store.query_create_delete(subitem, self.config['db']['subtablename'] )
+                    self.store.delete()
+                    
+                    self.store.query_create_insert(subitem, self.config['db']['subtablename'] )
+                    self.store.insert(subitem)
+                
 
     def update(self, data_store):
-        #data_store = self.store.data_store
-        self.store.query_create_update(data_store)
-        self.store.update(data_store)
+        """ updaten des gesamten datenstruktur inkl subtable? """
+        self.store.query_create_update(data_store.data, self.config['db']['tablename'])
+        self.store.update(data_store.data)
+        if data_store.data_subitems:
+            print "sub update"
+            # wenn sub existiert: update
+            # wenn nicht: inserten
+            for subitem in data_store.data_subitems.values():
+                #print subitem
+
+                if self.store.exists(subitem, self.config['db']['subtablename']):
+                    self.store.query_create_update(subitem, self.config['db']['subtablename'])
+                    self.store.update(subitem)
+                else:
+                    self.store.query_create_insert(subitem, self.config['db']['subtablename'])
+                    self.store.insert(subitem)
+            
+            
 
        
 
