@@ -292,6 +292,7 @@ class BaseImporter(SourceScan):
         self.fields_encode_all()
         ### === storage 
         # setzt op in data_store auch?
+
         self.data_store.dump2()
         # operation im DB backend auf den weg bringen
         self.operate( self.data_store )
@@ -606,7 +607,7 @@ class BaseImporter(SourceScan):
         if data_store.data_subitems:
             
             for subitem in data_store.data_subitems.values():
-                print "SUB insert"
+                #print "SUB insert"
 
                 # wenn sub mit coid schon existiert: loeschen und neu anlegen
                 if self.store.exists(subitem, self.config['db']['subtablename']):
@@ -622,20 +623,26 @@ class BaseImporter(SourceScan):
         self.store.query_create_update(data_store.data, self.config['db']['tablename'])
         self.store.update(data_store.data)
         if data_store.data_subitems:
-            print "sub update"
+            #print "sub update"
             # wenn sub existiert: update
             # wenn nicht: inserten
+            subtablename = self.config['db']['subtablename']
             for subitem in data_store.data_subitems.values():
                 #print subitem
 
-                if self.store.exists(subitem, self.config['db']['subtablename']):
-                    self.store.query_create_update(subitem, self.config['db']['subtablename'])
+                if self.store.exists(subitem, subtablename):
+                    self.store.query_create_update(subitem, subtablename)
                     self.store.update(subitem)
                 else:
-                    self.store.query_create_insert(subitem, self.config['db']['subtablename'])
+                    self.store.query_create_insert(subitem, subtablename)
                     self.store.insert(subitem)
-            
-            
+                # XXX custom!
+                val = subitem['kontakt']
+                res = self.store.query_create_select_by( 'kontakt', val, subtablename)
+                if res:
+                    print "ENTRY FOUND !!"
+                    self.store.query_create_delete(key, val, tablename)
+                    self.store.delete( )
 
        
 

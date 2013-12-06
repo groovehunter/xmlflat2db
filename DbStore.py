@@ -204,6 +204,9 @@ class DbStore(object):
         cursor = self.conn.cursor()
         cursor.execute( self.sql )
         
-        
-        
-        
+    def query_create_select_by(self, fn, val, tablename):
+        """ create SELECT statement to find dataset by a fields value """
+        self.sql = 'SELECT * FROM %s WHERE %s=%s' %( tablename, fn, val)
+
+
+

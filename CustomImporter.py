@@ -54,15 +54,15 @@ class CustomImporter(BaseImporter):
         status = data_in.status
         if status == 'A':
             self.operation = 'insert_or_update'
-            self.api_set('status', '3')
+            self.api_set('status', '9')
 
         elif status == 'H':
             self.operation = 'insert_or_update'
-            self.api_set('status', '3')
+            self.api_set('status', '9')
 
         elif status == 'X':
             self.operation = 'update'
-            self.api_set('status', '9')
+            self.api_set('status', '3')
 
         self.data_store.set_action( self.operation )
 

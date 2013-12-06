@@ -89,9 +89,10 @@ class DataStore(object):
         return self.data_subitems[key]
 
 
+
     def dump2(self):
         # XXX remove, custom!
-        keys = ['coid','name','zeile2','plz','laborid']
+        keys = ['coid','kundenid','laborid']
         self.dumpw(self.data, keys)
         #keys = ['coid','typ','kontakt']
         #self.dumpw(self.data_sub, keys)
