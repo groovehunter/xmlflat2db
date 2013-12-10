@@ -25,11 +25,10 @@ class Datensatz(object):
         for attr_special in attrs_special:
             if attr_special in val_dict:
                 setattr(self, attr_special, val_dict[attr_special])
-                # XXX bereits entfernen oder nicht? ZENSUR!! :-)
-                #status = val_dict.pop('status')
 
         for key in val_dict.keys():
             self.data[key] = val_dict[key]
+            #print key, "\t", type(self.data[key])
 
 
     def get_uid(self):
@@ -37,11 +36,13 @@ class Datensatz(object):
 
 
     def dump(self):
-        out = ''
         for key in self.data.keys():
-            out += "%s|%s\n" %(key,self.data[key])
-
-        return out
+            print key, "\t" ,
+            try:
+                print self.data[key],
+            except:
+                print "ENC",
+            print "\t\t", type(self.data[key])
 
 
     def as_dict(self):

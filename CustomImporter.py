@@ -101,7 +101,7 @@ class CustomImporter(BaseImporter):
             
     def field_handler_kundenstatus(self):
         status = self.api_get('status')
-        print status
+        #print status
         self.api_set('kundenstatus', status) 
 
 

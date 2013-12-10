@@ -168,76 +168,40 @@ class BaseImporter(SourceScan):
 
             try:
                 for event, elem in context:
-                    if event == "start" and elem.tag == self.DATASET_TAG:
-                        for child in elem:
-                            if child.text is None:
-                                val = ''
+                    if elem.tag == self.DATASET_TAG:
+                        if event == "start":
+                            data_in = Datensatz()
+                            data = {}
+                            
+                        elif event == "end":
+                            for child in elem:
+                                if child.text is None:
+                                    val = None
+                                if type(child.text) == type(u""):
+                                    val = child.text
+                                if type(child.text) == type(""):
+                                    val = child.text.decode(self.encoding)
+                                    
+                                #data_in.data[child.tag] = val
+                                data[child.tag] = val
+                                
+                            data_in.setze_per_dict(data)
+                            
+                            if self.keep_in_memory:
+                                self.data_array[ data_in.get_uid() ] = data_in
                             else:
-                                val = child.text
-                            data[child.tag] =  val
-
-                    elif event == "end" and elem.tag == self.DATASET_TAG:
-                        self.num_ds_given += 1
-                        self.id_tmp += 1
-                        data_in = Datensatz()
-                        data_in.setze_per_dict(data)
-                        if self.keep_in_memory:
-                            self.data_array[ data_in.get_uid() ] = data_in
-                        else:
-                            ### HANDLE CALLS start here
-                            #self.data_in = data_in
-                            self.work_ds(data_in)
-
+                                self.work_ds(data_in)
+                                
+                                
+                src_success = True
+                
             except XMLSyntaxError:
                 self.src_failed.append(self.src_cur)
-                #print "DATASET FAILED "+str(context)+str(dir(context.root))
-                return False
-        return True
-
-
-    def iter_context(self, context):
-        """ iter over the flat xml structure """
-        from lxml.etree import XMLSyntaxError
-        data = {}
-        keys_collect = []
-        self.id_tmp = 0
-        self.num_ds_written = 0
-        self.num_ds_given = 0
-        try:
-            for event, elem in context:
-                if event == "start" and elem.tag == self.DATASET_TAG:
-                    for child in elem:
-                        if child.text is None:
-                            val = ''
-                        else:
-                            val = child.text
-                        data[child.tag] =  val
-
-                        # XXX hier weg, hier wird nicht zensiert! :)
-                        if not child.tag in self.keys_src_ignore_always:
-                            keys_collect.append(child.tag)
-
-                elif event == "end" and elem.tag == self.DATASET_TAG:
-                    self.num_ds_given += 1
-                    self.id_tmp += 1
-
-# XXX hier erstmal temp halten
-                    data_in = Datensatz()
-                    data_in.setze_per_dict(data)
-                    if self.keep_in_memory:
-                        self.data_array[ data_in.get_uid() ] = data_in
-                    else:
-                        ### HANDLE CALLS start here
-                        #self.data_in = data_in
-                        self.work_ds(data_in)
-
-                return True
-            
-        except XMLSyntaxError:
-            self.src_failed.append(self.src_cur)
-            #print "DATASET FAILED "+str(context)+str(dir(context.root))
-            return False
+                print "DATASET FAILED "+str(context.root)
+                src_success = False
         
+        print "src_success: "+str(src_success)
+        return src_success
 
 
     def work_ds(self, data_in):
@@ -249,6 +213,7 @@ class BaseImporter(SourceScan):
         self.operation = None
 
         # setzt aktions-feld im data_store
+        #data_in.dump()
         self.set_operation(data_in)
         self.data_in = data_in
         #print data_in.data
@@ -293,7 +258,7 @@ class BaseImporter(SourceScan):
         ### === storage 
         # setzt op in data_store auch?
 
-        self.data_store.dump2()
+        #self.data_store.dump2()
         # operation im DB backend auf den weg bringen
         self.operate( self.data_store )
         # pruefe ob vollstaendige verarbeitung
@@ -378,14 +343,12 @@ class BaseImporter(SourceScan):
         for calc in self.config_importer['fields2calc']:
 
             for pair in calc['field_map_dict'].items():
-                exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
-                exec exstr
+                if pair[1] in self.data_in.data:
+                    exstr = "sval=self."+calc['mapfunc']+"(self.data_in.data[pair[1]])"
+                    exec exstr
 
-                #try:
-                #    print "%s | %s" %(self.data_in.data[pair[1]], sval)
-                #except:
-                #    pass
-                self.data_store.set_field( pair[0], sval )
+                    self.data_store.set_field( pair[0], sval )
+
 
     # ## FIELD TYPES                                     ------------------------------------------------------ 
     def fields_typed_date(self):
@@ -404,11 +367,10 @@ class BaseImporter(SourceScan):
         for fn in self.config_importer['fields_typed_bool']:
             data = self.data_in.data
             if fn in data:
-                print data[fn]
+                #print data[fn]
                 if data[fn] == 'true':
                     self.data_store.set_field(fn, True)
                 elif data[fn] == 'false':
-                    print "FFF"
                     self.data_store.set_field(fn, False)
                 else:
                     self.data_store.set_field(fn, None)
