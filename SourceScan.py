@@ -102,9 +102,17 @@ class SourceScan:
         src_sub_dir_cur = self.src_main_dir + src_sub_dir
         for fn in ls:
             self.src_cur = src_sub_dir_cur + '/' + fn
+            self.src_cur_archive = src_sub_dir_cur + '/archiv/' + fn
             print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
             success = self.work()
-            if success:
-                pass
+            if success and not self.test:
                 # XXX move file to archiv
+                print "moving file to %s " %self.src_cur_archive
+                try:
+                    os.rename(self.src_cur, self.src_cur_archive)
+                    print "....OK!"                
+                except OSError:
+                    print "FAILED!"
             sleep(1)
+
+

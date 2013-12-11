@@ -28,7 +28,7 @@ class BaseImporter(SourceScan):
     def __init__(self):
         self.source = None
         self.src_failed = []
-
+        self.test = ''
         # fuer in-memory operationsmodus
         self.keep_in_memory = False
         self.data_array = {}
