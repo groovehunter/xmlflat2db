@@ -23,7 +23,7 @@ class TestParser:
 
     def __init__(self):
         self.src_cur = ''
-        self.src_dir = ''
+        self.src_dir = '/path/to/dir/with/xml-files'
         self.DATASET_TAG = 'customer'
 
     def loop(self):
@@ -46,24 +46,9 @@ class TestParser:
 
 
     def work(self):
-        '''
-        try:
-            self.parse()
-        except ImporterError:
-            # hier merken die failed files.
-            pass
-
-        data = {}
-
-        try:
-            tree = etree.parse(self.src_cur)
-        except:
-            # XXX handle exception 
-            return False
-        self.encoding = tree.docinfo.encoding
-        '''
+        self.parse()
         print self.src_cur
-        self.encoding = 'iso8859-1'
+        #self.encoding = 'iso8859-1'
         xmlfile = open(self.src_cur)
         with xmlfile as xml_doc:
             context = iterparse(xml_doc, events=("start", "end"))
@@ -76,10 +61,14 @@ class TestParser:
                     #print elem.tag
                     if elem.tag == self.DATASET_TAG:
                         if event == "start":
-                            data_in = Datensatz()
+                            pass
+                        #    data_in = Datensatz()
                         elif event == "end":
                             try:
+                                data_in = Datensatz()
+                                print "start FOR"
                                 for child in elem:
+                                    print child.tag,
                                     if child.text is None:
                                         val = None
                                     if type(child.text) == type(u""):
@@ -88,8 +77,9 @@ class TestParser:
                                         val = "STRING"
                                     #    val = child.text.decode(self.encoding)
                                     data_in.data[child.tag] = val
-                                    #data_in.dump()
+                                data_in.dump()
                                 #etree.dump(elem)
+                                print
                             except:
                                 etree.dump(elem)
                     elif elem.tag == 'custLIS':
@@ -97,6 +87,8 @@ class TestParser:
                             print "START LIS"
                         elif event == "end":
                             print "custLIS ---"
+                    if elem.getparent() is None:
+                        break
                 src_success = True
             '''
             except:

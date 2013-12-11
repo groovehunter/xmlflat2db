@@ -169,11 +169,12 @@ class BaseImporter(SourceScan):
             try:
                 for event, elem in context:
                     if elem.tag == self.DATASET_TAG:
+
                         if event == "start":
-                            data_in = Datensatz()
-                            data = {}
-                            
+                            pass
+
                         elif event == "end":
+                            data = {}
                             for child in elem:
                                 if child.text is None:
                                     val = None
@@ -182,17 +183,22 @@ class BaseImporter(SourceScan):
                                 if type(child.text) == type(""):
                                     val = child.text.decode(self.encoding)
                                     
-                                #data_in.data[child.tag] = val
                                 data[child.tag] = val
-                                
+
+                            data_in = Datensatz()
                             data_in.setze_per_dict(data)
                             
                             if self.keep_in_memory:
                                 self.data_array[ data_in.get_uid() ] = data_in
                             else:
+                                # MAIN CALL
                                 self.work_ds(data_in)
                                 
+                            del data_in
                                 
+                    if elem.getparent() is None:
+                        break
+                               
                 src_success = True
                 
             except XMLSyntaxError:
