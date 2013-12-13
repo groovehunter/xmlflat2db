@@ -62,9 +62,7 @@ class BaseImporter(SourceScan):
         #self.config_set(self.config)   # stuff XXX
 
         self.src_main_dir   = self.config['src_main_dir']
-        self.src_labor      = 'BIOS'
-        self.DATASET_TAG    = self.config['DATASET_TAG']
-
+        #self.src_labor      = 'BIOS'
 
 
     def init(self):
@@ -74,12 +72,6 @@ class BaseImporter(SourceScan):
         # setzt vorraus dass store gesetzt ist
         #self.config_set(self.config)
 
-    """
-    def config_set(self, config):
-        self.config = config
-        for ckey in config.keys():
-            setattr(self, ckey, config[ckey])
-    """
 
     def init_db(self, config):
         self.set_storage( self.config['typ_store'] )
@@ -130,7 +122,9 @@ class BaseImporter(SourceScan):
             self.encoding = tree.docinfo.encoding
             self.root = tree.getroot()
         except ParseError:
-            raise ImporterError
+            self.src_failed.append(self.src_cur)
+            self.encoding = 'iso-8859-5'
+            #raise ImporterError
 
 
 
@@ -140,36 +134,23 @@ class BaseImporter(SourceScan):
             zufriedenstellend verarbeitet wurde (was heisst das?)
         """
 
-        try:
-            self.parse()
-        except ImporterError:
-            # hier merken die failed files.
-            pass
-
-        data = {}
-        keys_collect = []
         self.id_tmp = 0
         self.num_ds_written = 0
         self.num_ds_given = 0
-
-        ### here
+        src_success = False
+        ### here ??
         self.init_db(self.config['db'])
-        try:
-            tree = etree.parse(self.src_cur)
-        except:
-            # XXX handle exception 
-            return False
-        self.encodig = tree.docinfo.encoding
+        self.parse()
+        
         xmlfile = open(self.src_cur)
+
         with xmlfile as xml_doc:
             context = iterparse(xml_doc, events=("start", "end"))
 
-            #self.iter_context(context)
-
             try:
                 for event, elem in context:
-                    if elem.tag == self.DATASET_TAG:
-
+                    #print elem.tag
+                    if elem.tag == self.config['DATASET_TAG']:
                         if event == "start":
                             pass
 
@@ -187,16 +168,26 @@ class BaseImporter(SourceScan):
 
                             data_in = Datensatz()
                             data_in.setze_per_dict(data)
-                            
+                            data_in.dump()
+                            self.id_tmp += 1
+
                             if self.keep_in_memory:
                                 self.data_array[ data_in.get_uid() ] = data_in
                             else:
                                 # MAIN CALL
+                                #print "MAIN CALL"
+                                
+                                if 'kundennr' in data_in.data:
+                                    if data_in.data['kundennr'] == u'586131':
+                                        continue
+                                if 'kundenid' in data_in.data:
+                                    if data_in.data['kundenid'] in [ u'_15470___2', u'592293___2', u'589958___2',u'772814___2']:
+                                        continue
                                 self.work_ds(data_in)
                                 
                             del data_in
                                 
-                    if elem.getparent() is None:
+                    if not event == 'start' and elem.getparent() is None:
                         break
                                
                 src_success = True
@@ -248,6 +239,7 @@ class BaseImporter(SourceScan):
         self.fields2calc()
         self.fields_dest_fetch()
 
+        self.fields_set_not_null()
         # alle weiteren felder
         self.fields_do_transfer()
 
@@ -264,7 +256,7 @@ class BaseImporter(SourceScan):
         ### === storage 
         # setzt op in data_store auch?
 
-        #self.data_store.dump2()
+        self.data_store.dump2()
         # operation im DB backend auf den weg bringen
         self.operate( self.data_store )
         # pruefe ob vollstaendige verarbeitung
@@ -303,8 +295,10 @@ class BaseImporter(SourceScan):
                 ds_keys.remove(key)
                 
         for key in ds_keys:
-            #print key
-            self.data_store.data[key] = self.data_store.data[key].encode('utf8')
+            if self.data_store.data[key] == None:
+                self.data_store.set_field(key, u''.encode('utf8'))
+            else:
+                self.data_store.data[key] = self.data_store.data[key].encode('utf8')
 
 
     def fields_auto(self):
@@ -334,14 +328,26 @@ class BaseImporter(SourceScan):
 
     def fields_set_not_null(self):
         """ bereitstellen der not-null fields 
-            hier koennte man aufrufen den transfer mit einer liste """
+            hier koennte man aufrufen den transfer mit  einer liste 
+            XXX exception bei zB fehlendem Namen?
+        """
         for fn in self.config_importer['fields_not_null']:
             data = self.data_in.data
-            if fn in data:
+            '''
+            if fn in data and not data[fn] == None:
                 val = data[fn]
                 self.data_store.set_field(fn, val)
             else:
                 raise MissingDataException
+            '''
+            if not fn in data:
+                val = u''
+            if fn in data and data[fn] == None:
+                val = u''
+            if fn in data:
+                val = data[fn]
+            
+            self.data_store.set_field(fn, val)
 
 
     def fields2calc(self):
@@ -451,8 +457,11 @@ class BaseImporter(SourceScan):
 
 
     def api_get(self, key):
-        """ get a field of data source """ 
-        return self.data_in.data[key]
+        """ get a field of data source """
+        if key in self.data_in.data:
+            return self.data_in.data[key]
+        else:
+            return None
 
 
     def api_set(self, key, val):
@@ -477,11 +486,14 @@ class BaseImporter(SourceScan):
             data = self.data_in.data
             if fn in data:
                 val = data[fn]
+                #sval = val.encode('utf8')
                 sval = val
-                ### leave here for unicode
-                self.data_store.set_field(fn, sval)
+                if not sval is None:
+                    ### leave here for unicode
+                    self.data_store.set_field(fn, sval)
             else:   
                 pass
+                #print "FIELD TRANSFER not in data_in: ",fn
                 # XXX store in cloud :)
 
 
@@ -552,7 +564,11 @@ class BaseImporter(SourceScan):
                                 self.config_importer['fields_unique'] ):
             self.operation = 'update'
         else:
-            self.operation = 'insert'
+            if self.data_in.data['status'] == u'X':      # XXX cUSTOM!!
+                self.operation = 'none'
+            else:
+                self.operation = 'insert'
+        print "operation final: ", self.operation
         
 
     def operate(self, data_store):
@@ -563,11 +579,17 @@ class BaseImporter(SourceScan):
             self.update(data_store)
         elif self.operation == 'insert':
             self.insert(data_store)
+        elif self.operation == 'delete':
+            self.delete(data_store)
+        elif self.operation == 'none':
+            print "NO OPERATION needed"
+            pass
         # 
 
 
     # XXX so okay? was ist custom delete zb = update mit status=9
     def insert(self, data_store):
+        
         #data_store = self.store.data_store
         self.store.query_create_insert(data_store.data, self.config['db']['tablename'])
         self.store.insert(data_store.data)

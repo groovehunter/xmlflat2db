@@ -1,4 +1,4 @@
-import os
+import os, glob
 import subprocess
 from time import sleep
 from lxml import etree
@@ -31,9 +31,11 @@ class SourceScan:
         """ ein labor-subdir scannen, 
             @return tuple (filelist, number_files) """
         src_dir = self.src_main_dir + src_sub_dir + '/'
-        ls = os.listdir(src_dir)
-        if 'archiv' in ls:
-            ls.remove('archiv')
+        #ls = glob.glob(src_sub_dir+'/cust_'+src_sub_dir+'.*.ok')
+        ls = glob.glob(src_dir+'cust'+src_sub_dir+'*')
+        #ls = os.listdir(src_dir)
+        #if 'archiv' in ls:
+        #    ls.remove('archiv')
         ls.sort()
         return (ls, len(ls))
 
@@ -47,20 +49,6 @@ class SourceScan:
             self.src_cur = self.src_dir + ls[0]
         else:
             self.src_cur = None
-
-    # das is ja das allerletzte. XML zeilenweise dumpen BUH flo!!
-    '''
-    def source_dump_first(self):
-        con = file(self.src_cur, 'r').readlines()
-        if con:
-            for line in con:
-                try:
-                    print line
-                except:
-                    print "cannot print that line"
-            return True
-        return False
-    '''
 
 
     def source_cur_checkvalid(self):
@@ -85,11 +73,13 @@ class SourceScan:
         self.src_sub_dirs_todo = []
         for src_sub_dir in self.src_dirs:
             num_files, away = self.scan_source_dir(src_sub_dir)
-            if num_files > 0:
+            if len(num_files) > 0:
+                #print num_files
                 todo = True
                 self.src_sub_dirs_todo.append(src_sub_dir)
 
         return not todo
+
 
     def loop_src_dirs(self):
         for src_sub_dir in self.src_dirs:
@@ -100,12 +90,19 @@ class SourceScan:
         """ verarbeite alle files in sub dir """
         ls, num = self.scan_source_dir(src_sub_dir)
         src_sub_dir_cur = self.src_main_dir + src_sub_dir
-        for fn in ls:
-            self.src_cur = src_sub_dir_cur + '/' + fn
-            self.src_cur_archive = src_sub_dir_cur + '/archiv/' + fn
-            print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
+
+        for fp in ls:
+            
+            #self.src_cur = src_sub_dir_cur + '/' + fn
+            self.src_cur = fp
+            self.src_cur_archive = src_sub_dir_cur + '/archiv/' + os.path.basename(fp)
+            #print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
+            print "STARTING WORK ON FILE: " + fp
             success = self.work()
-            if success and not self.test:
+            if self.test:
+                continue
+            
+            if success:
                 # XXX move file to archiv
                 print "moving file to %s " %self.src_cur_archive
                 try:
@@ -113,6 +110,9 @@ class SourceScan:
                     print "....OK!"                
                 except OSError:
                     print "FAILED!"
+                    
+            else:
+                print "file failed " + self.src_cur
             sleep(1)
 
 

@@ -52,17 +52,17 @@ class CustomImporter(BaseImporter):
 
         # ERSTER SCHRITT: status feld im datensatz
         status = data_in.status
-        if status == 'A':
+        if status == u'A':
             self.operation = 'insert_or_update'
-            self.api_set('status', '9')
+            #self.api_set('status', '3')
 
-        elif status == 'H':
+        elif status == u'H':
             self.operation = 'insert_or_update'
-            self.api_set('status', '9')
+            #self.api_set('status', '3')
 
-        elif status == 'X':
+        elif status == u'X':
             self.operation = 'update'
-            self.api_set('status', '3')
+            #self.api_set('status', '9')
 
         self.data_store.set_action( self.operation )
 
@@ -92,6 +92,8 @@ class CustomImporter(BaseImporter):
     def field_handler_strasse(self):
         if self.api_src_key_exists('hausnr'):
             strasse = self.api_get('strasse')
+            if not strasse:
+                strasse = u''
             sp = u''
             if strasse.endswith(u'.'):
                 sp = u' '
@@ -117,6 +119,8 @@ class CustomImporter(BaseImporter):
 
     def suchString(self, val):
         """ custom mapping func for some fields """
+        if type(val) != type(u''):
+            return u''
         return suchString( val )
 
 
@@ -146,15 +150,24 @@ class CustomImporter(BaseImporter):
 
     def field_handler_suchname(self):
         #print self.data_in.data.keys()
-        tmp2 = self.data_in.data['name']
+        tmp2 = ''
+        if 'name' in self.data_in.data:
+            name = self.data_in.data['name']
+            if name is None:
+                name = u''
+            tmp2 += name
+
         if 'vorname' in self.data_in.data:
-            tmp2 += self.data_in.data['vorname']
+            if self.data_in.data['vorname'] is not None:
+                tmp2 += self.data_in.data['vorname']
         
         for i in range(2,4):
             key = 'zeile'+str(i)
             if key in self.data_in.data:
-                tmp2 += self.data_in.data[key]
-                
+                zval = self.data_in.data[key]
+                if zval:
+                    tmp2 += zval
+                    
         v2 = self.suchString( tmp2 )
         #print v2
 

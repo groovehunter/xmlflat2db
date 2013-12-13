@@ -112,7 +112,8 @@ class DbStore(object):
 
         self.cursor.execute(sql)
         res = self.cursor.fetchone()
-        #print "exist_keys: " + str(res)
+        #print sql
+        print "exist_keys: " + str(res)
         if res:
             return res[0]
         else:
@@ -124,9 +125,11 @@ class DbStore(object):
         self.data_store = data_store
         pass
 
+
     def insert(self, data):
         """ speichern in DB """
-
+        #print self.sql
+        #print data
         cursor = self.conn.cursor()
         try:
             cursor.execute( self.sql, data )

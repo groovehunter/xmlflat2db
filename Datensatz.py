@@ -107,10 +107,6 @@ class DataStore(object):
         keys.sort()
         self.dumpw(self.data, keys)
  
-        print "SUB"
-        keys = self.data_sub.keys()
-        keys.sort()
-        self.dumpw(self.data_sub, keys)
 
 
     def dumpw(self, data, keys):
