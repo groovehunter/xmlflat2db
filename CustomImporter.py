@@ -88,7 +88,7 @@ class CustomImporter(BaseImporter):
             val = u'%s_%s_000' %(laborid[0], kundenid.zfill(6))
             self.api_set('transitid', val)
 
-    
+    """
     def field_handler_strasse(self):
         if self.api_src_key_exists('hausnr'):
             strasse = self.api_get('strasse')
@@ -99,8 +99,8 @@ class CustomImporter(BaseImporter):
                 sp = u' '
             str_hnr = strasse+u' '+self.api_get('hausnr') 
             self.api_set('strasse', str_hnr)
-    
     """
+    
     def field_handler_tmp_strasse(self):
         if self.api_src_key_exists('hausnr'):
             strasse = self.api_get('strasse')
@@ -111,7 +111,7 @@ class CustomImporter(BaseImporter):
                 sp = u' '
             str_hnr = strasse+u' '+self.api_get('hausnr') 
             self.api_set_tmp('strasse', str_hnr)
-    """
+    
             
     def field_handler_kundenstatus(self):
         status = self.api_get('status')

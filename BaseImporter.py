@@ -238,7 +238,7 @@ class BaseImporter(SourceScan):
         # b) aus quell-daten
         # c) muss-felder = none null felder 1:1
         # d) vielleicht-felder aus source , jetzt?
-        #self.fields_auto_tmp()
+        self.fields_auto_tmp()
 
         # felder mit typ-spezieller sonderbehandlung
         self.fields_typed_date()
@@ -275,7 +275,11 @@ class BaseImporter(SourceScan):
 
 
     def initDataStore(self):
+        # setze haupt-datensatz
         self.data_store = DataStore()
+        # init. zwischen-speicher DS
+        self.data_tmp = DataStore()
+        # 
         self.data_store.init_custom()
 
         self.data_existing = DataStore()
@@ -487,6 +491,8 @@ class BaseImporter(SourceScan):
         """ setze feld auf wert in dest dict """
         self.data_store.set_field(key, val)
 
+    def api_set_tmp(self, key, val):
+        self.data_tmp.set_field(key, val)
 
     def fields_dest_fetch(self):
         """ spezielle felder in dest sollen aus mehreren src feldern 
@@ -504,7 +510,12 @@ class BaseImporter(SourceScan):
         for fn in self.fields_transfer:
             data = self.data_in.data
             if fn in data:
-                val = data[fn]
+                ### XXX NEU: Check !
+                # falls in data_tmp was vorbereitet wurde: 
+                if fn in self.fields_auto_tmp:
+                    val = self.data_tmp.data[fn]
+                else:
+                    val = data[fn]
                 #sval = val.encode('utf8')
                 sval = val
                 if not sval is None:
