@@ -1,4 +1,5 @@
 import sys
+import logging as l
 
 
 class DbStoreError(Exception):  pass
@@ -36,7 +37,7 @@ class DbStore(object):
 
 
     def is_connected(self):
-        # XXX needed?
+        # TODO: needed?
         if self.conn: 
             return True
         return False
@@ -55,7 +56,7 @@ class DbStore(object):
         amax = maximal[0]
         if not amax:
             amax = 0
-        #print "MAX ID "+str(amax)
+        l.debug("MAX ID: %s " % str(amax))
         return int(amax)
 
 
@@ -79,7 +80,7 @@ class DbStore(object):
         e = e.rstrip(',')
         self.sql = 'SELECT %s FROM %s WHERE %s=%s' %(e, self.tablename,
                     self.keyname, uid)
-#        print self.sql
+        l.debug(self.sql)
 
 
     def exists(self, data, tablename):
@@ -112,8 +113,8 @@ class DbStore(object):
 
         self.cursor.execute(sql)
         res = self.cursor.fetchone()
-        #print sql
-        print "exist_keys: " + str(res)
+        l.debug(sql)
+        l.info( "exist_keys: %s " % str(res))
         if res:
             return res[0]
         else:
@@ -128,22 +129,21 @@ class DbStore(object):
 
     def insert(self, data):
         """ speichern in DB """
-        #print self.sql
-        #print data
+        l.debug( self.sql )
+        l.debug( data )
         cursor = self.conn.cursor()
         try:
             cursor.execute( self.sql, data )
             return True
 
         except UnicodeEncodeError, e:
-            print "DbStore, def insert; unicode error", str(e)
+            l.error( "DbStore, def insert; unicode error: %s" %str(e))
             #self.missed.append[ data[self.keyname] ]
-            #print self.sql
-            #print data[self.keyname]
+            l.debug( data[self.keyname])
         #except:
 #            sys.exit(1)
-            # XXX return False, caller need to remember missed DS
-            # raise DbStoreError # XXX wie geht das? raisen
+            # TODO: return False, caller need to remember missed DS
+            # raise DbStoreError # TODO: wie geht das? raisen
 
 
     def query_create_insert(self, data, tablename):
@@ -167,12 +167,13 @@ class DbStore(object):
     def update(self, data):
         """ speicher in DB """
         cursor = self.conn.cursor()
+        l.debug(self.sql)
         try:
             cursor.execute( self.sql, data )
             return True
 
         except UnicodeEncodeError, e:
-            print "DbStore, def update; unicode error", str(e)
+            l.error("DbStore, def update; unicode error: %s" % str(e))
             #self.missed.append[ data[self.keyname] ]
             return False
         #except:
@@ -181,7 +182,7 @@ class DbStore(object):
     def query_create_update(self, data, tablename):
         """ prepare update query, keys are from source dataset """
         keys_query = data.keys()
-        #print keys_query
+        l.debug( str(keys_query) )
         keys_query.remove(self.keyname)
         keys_query.sort()
         e = ''
@@ -203,7 +204,7 @@ class DbStore(object):
                 
 
     def delete(self):
-        print self.sql
+        l.debug( self.sql )
         cursor = self.conn.cursor()
         cursor.execute( self.sql )
         

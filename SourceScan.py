@@ -2,6 +2,8 @@ import os, glob
 import subprocess
 from time import sleep
 from lxml import etree
+import logging as l
+
 
 
 class SourceScan:
@@ -30,21 +32,47 @@ class SourceScan:
     def scan_source_dir(self, src_sub_dir):
         """ ein labor-subdir scannen, 
             @return tuple (filelist, number_files) """
+        if self.config['src_pattern']:
+            ls, ll = self.scan_source_dir_regexp(src_sub_dir)
+        elif self.config['src_glob']:
+            ls, ll = self.scan_source_dir_glob(src_sub_dir)
+        l.info( "FOUND %s src files." % str(ll) )
+        return ls, ll
+
+    
+    def scan_source_dir_glob(self, src_sub_dir):
+        glob = self.config['src_glob']
         src_dir = self.src_main_dir + src_sub_dir + '/'
-        #ls = glob.glob(src_sub_dir+'/cust_'+src_sub_dir+'.*.ok')
-        ls = glob.glob(src_dir+'cust'+src_sub_dir+'*')
-        #ls = os.listdir(src_dir)
-        #if 'archiv' in ls:
-        #    ls.remove('archiv')
+        ls = glob.glob( src_dir + glob )
         ls.sort()
         return (ls, len(ls))
 
 
+    def scan_source_dir_regexp(self, src_sub_dir):
+        l.info("REGEXP scan")
+        import re
+        src_dir = self.src_main_dir + src_sub_dir + '/'
+        ls = os.listdir(src_dir)
+        pattern = re.compile(self.config['src_pattern'])
+        found = []
+        
+        for fn in ls:
+            m = re.match(pattern, fn)
+            if m:
+                out = fn, "\t", m.group()
+                l.debug(out)
+                found.append(src_dir + fn)
+            else:
+                print fn
+
+        found.sort()
+        return (found, len(found))
+        
+
+
     def source_load_first(self):
-        """ load first 
- 
-        """
-        ls = self.scan_sources() # XXX rename to : source_a.....
+        """ load first """
+        ls = self.scan_sources() # TODO: rename to : source_a.....
         if ls:
             self.src_cur = self.src_dir + ls[0]
         else:
@@ -97,22 +125,22 @@ class SourceScan:
             self.src_cur = fp
             self.src_cur_archive = src_sub_dir_cur + '/archiv/' + os.path.basename(fp)
             #print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
-            print "STARTING WORK ON FILE: " + fp
+            l.info("STARTING WORK ON FILE: " + fp)
             success = self.work()
             if self.test:
                 continue
             
             if success:
-                # XXX move file to archiv
-                print "moving file to %s " %self.src_cur_archive
+                # TODO: move file to archiv
+                l.info( "moving file to %s " %self.src_cur_archive)
                 try:
                     os.rename(self.src_cur, self.src_cur_archive)
-                    print "....OK!"                
+                    l.info( "....OK!" )               
                 except OSError:
-                    print "FAILED!"
+                    l.error( "rename FAILED!" )
                     
             else:
-                print "file failed " + self.src_cur
+                l.debug( "file failed %s " % self.src_cur)
             sleep(1)
 
 

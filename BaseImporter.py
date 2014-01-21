@@ -8,6 +8,8 @@ from lxml import etree
 from lxml.etree import iterparse, XMLSyntaxError, ParseError
 import yaml
 from datetime import datetime
+from datetime import date
+import logging
 
 
 class MissingDataException(Exception): pass
@@ -18,8 +20,7 @@ class FormatError(Exception):       pass
 ## helper functs
 def now():
     now = datetime.now()
-    #now_iso = datetime.isoformat(now)
-    return now #now_iso
+    return now 
 
 
 
@@ -59,7 +60,7 @@ class BaseImporter(SourceScan):
         self.config         = self.config_array['config_main']
         self.config_importer= self.config_array['config_importer'] 
 
-        #self.config_set(self.config)   # stuff XXX
+        #self.config_set(self.config)   # stuff #TODO
 
         self.src_main_dir   = self.config['src_main_dir']
         #self.src_labor      = 'BIOS'
@@ -71,6 +72,16 @@ class BaseImporter(SourceScan):
         self.load_config()
         # setzt vorraus dass store gesetzt ist
         #self.config_set(self.config)
+        llmap = {   'debug' :   logging.DEBUG,
+                    'info':     logging.INFO,
+                }
+        today = date.today()
+        today_fmt =today.strftime('%y%m%d') 
+        logfile = self.config['logfile']+ '_' + today_fmt +'.log'
+        print logfile
+        logging.basicConfig(filename= logfile, 
+                            level= llmap[self.config['loglevel']])
+        logging.info('Started importer')
 
 
     def init_db(self, config):
@@ -94,6 +105,7 @@ class BaseImporter(SourceScan):
         all_done = self.no_files_left()
         print "ALL DONE? ", str(all_done)
         print "LEFT: "+str(self.src_sub_dirs_todo)
+        logging.info("LEFT: "+str(self.src_sub_dirs_todo))
 
 
     def set_storage(self, typ):
@@ -149,7 +161,6 @@ class BaseImporter(SourceScan):
 
             try:
                 for event, elem in context:
-                    #print elem.tag
                     if elem.tag == self.config['DATASET_TAG']:
                         if event == "start":
                             pass
@@ -175,7 +186,6 @@ class BaseImporter(SourceScan):
                                 self.data_array[ data_in.get_uid() ] = data_in
                             else:
                                 # MAIN CALL
-                                #print "MAIN CALL"
                                 
                                 if 'kundennr' in data_in.data:
                                     if data_in.data['kundennr'] == u'586131':
@@ -194,26 +204,25 @@ class BaseImporter(SourceScan):
                 
             except XMLSyntaxError:
                 self.src_failed.append(self.src_cur)
-                print "DATASET FAILED "+str(context.root)
+                logging.warning( "DATASET FAILED "+self.src_cur )
                 src_success = False
         
-        print "src_success: "+str(src_success)
+        logging.debug( "src_success: "+self.src_cur)
         return src_success
 
 
     def work_ds(self, data_in):
-        """ steuert einen durchgang komplett """
-        #print "WORK ON " + data_in.data['name']
-        # erhaelt flachen datensatz
+        """ steuert einen durchgang komplett 
+            @return success (bool)
+        """
+        logging.debug( "WORK ON " + str(data_in.dump()) )
         # initialisiert data_store und mehr
         self.initDataStore()
         self.operation = None
 
         # setzt aktions-feld im data_store
-        #data_in.dump()
         self.set_operation(data_in)
         self.data_in = data_in
-        #print data_in.data
 
         ### === fields 
         # werte weitere wichtige felder aus
@@ -229,6 +238,7 @@ class BaseImporter(SourceScan):
         # b) aus quell-daten
         # c) muss-felder = none null felder 1:1
         # d) vielleicht-felder aus source , jetzt?
+        #self.fields_auto_tmp()
 
         # felder mit typ-spezieller sonderbehandlung
         self.fields_typed_date()
@@ -251,12 +261,11 @@ class BaseImporter(SourceScan):
         # g) felder fuer subtabellen, inkl operation ausfuehren (?)
         self.data_store = self.fields_to_subtables(self.data_store)
 
-        #print self.data_store
+        logging.debug( self.data_store.dump() )
         self.fields_encode_all()
         ### === storage 
         # setzt op in data_store auch?
 
-        self.data_store.dump2()
         # operation im DB backend auf den weg bringen
         self.operate( self.data_store )
         # pruefe ob vollstaendige verarbeitung
@@ -277,12 +286,11 @@ class BaseImporter(SourceScan):
             print "FAILED file : ", self.src_failed.pop()
 
         return True
-
-
     
 
     def fields_encode_all(self):
-        """ encode all text fields finally in data_store to desired db encoding """
+        """ encode all text fields finally in data_store to desired 
+            db encoding """
         ds_keys = self.data_store.data.keys()
         for key in self.config_importer['fields_typed_date']:
             if key in ds_keys:
@@ -294,11 +302,12 @@ class BaseImporter(SourceScan):
             if key in ds_keys:
                 ds_keys.remove(key)
                 
+        dest_enc = self.config['db']['encoding']
         for key in ds_keys:
             if self.data_store.data[key] == None:
-                self.data_store.set_field(key, u''.encode('utf8'))
+                self.data_store.set_field(key, u''.encode(dest_enc))
             else:
-                self.data_store.data[key] = self.data_store.data[key].encode('utf8')
+                self.data_store.data[key] = self.data_store.data[key].encode(dest_enc)
 
 
     def fields_auto(self):
@@ -309,6 +318,15 @@ class BaseImporter(SourceScan):
                 hdl = "self.field_handler_"+key+"()"
                 #print "call handler: ",hdl
                 eval(hdl)
+                
+    def fields_auto_tmp(self):
+        fields_auto_tmp = self.config_importer['fields_auto_tmp']
+        if fields_auto_tmp:
+            for key in fields_auto_tmp:
+                hdl = "self.field_handler_tmp_"+key+"()"
+                #print "call handler: ",hdl
+                eval(hdl)
+        
 
     def fields_fix(self):
         """ setze felder mit festen default werten """
@@ -329,7 +347,7 @@ class BaseImporter(SourceScan):
     def fields_set_not_null(self):
         """ bereitstellen der not-null fields 
             hier koennte man aufrufen den transfer mit  einer liste 
-            XXX exception bei zB fehlendem Namen?
+            #TODO exception bei zB fehlendem Namen?
         """
         for fn in self.config_importer['fields_not_null']:
             data = self.data_in.data
@@ -371,9 +389,9 @@ class BaseImporter(SourceScan):
                 sval = self.prep_date(data[fn])
                 self.data_store.set_field(fn, sval)
             else:
-                pass  # log XXX
+                pass  # log #TODO
 
-    # XXX man koennte pruefen in diesen typ-routinen ob das feld schon behandelt wurde zb mit handler
+    # #TODO man koennte pruefen in diesen typ-routinen ob das feld schon behandelt wurde zb mit handler
     def fields_typed_bool(self):
         """ transferiere felder des typs bool """
         for fn in self.config_importer['fields_typed_bool']:
@@ -399,10 +417,10 @@ class BaseImporter(SourceScan):
                     sval = int(data[fn])
                 except:
                     sval = ''
-                    # XXX log here
+                    # #TODO log here
                 self.data_store.set_field(fn, sval)
             else:
-                pass  # log XXX
+                pass  # log #TODO
        
 
     def prep_date(self, v):
@@ -414,11 +432,12 @@ class BaseImporter(SourceScan):
         except ValueError:
         
             try:
+                # #TODO match independent of time zone shift!
                 dform = '%Y-%m-%dT%H:%M:%S+01:00'
                 d = datetime.strptime(v, dform)
                 return d.strftime(self.config_importer['format_date_dest'])
             except ValueError:
-                # XXX log
+                logging.error("ValueError")
                 #raise FormatError
                 return None
                 
@@ -476,7 +495,7 @@ class BaseImporter(SourceScan):
             for fetch in self.config_importer['fields_dest_fetch']:
                 key = fetch.keys()[0]
                 eval('self.field_handler_'+key+'()')
-                # XXX 
+                # #TODO 
 
 
     def fields_do_transfer(self):
@@ -493,8 +512,7 @@ class BaseImporter(SourceScan):
                     self.data_store.set_field(fn, sval)
             else:   
                 pass
-                #print "FIELD TRANSFER not in data_in: ",fn
-                # XXX store in cloud :)
+                logging.debug( "FIELD TRANSFER not in data_in: %s" %fn)
 
 
     def fields_to_subtables(self, data_store):
@@ -554,7 +572,6 @@ class BaseImporter(SourceScan):
 
 # ###   self.fields_transfer = fields_wanted_wo_date
         self.fields_transfer = fields_wanted_wo_dateboolint
-        #print str(fields_tmp)
         
 
     def set_operation_final(self, data_store):
@@ -564,11 +581,11 @@ class BaseImporter(SourceScan):
                                 self.config_importer['fields_unique'] ):
             self.operation = 'update'
         else:
-            if self.data_in.data['status'] == u'X':      # XXX cUSTOM!!
+            if self.data_in.data['status'] == u'X':      # #TODO cUSTOM!!
                 self.operation = 'none'
             else:
                 self.operation = 'insert'
-        print "operation final: ", self.operation
+        logging.info("operation final: %s " % self.operation)
         
 
     def operate(self, data_store):
@@ -582,12 +599,11 @@ class BaseImporter(SourceScan):
         elif self.operation == 'delete':
             self.delete(data_store)
         elif self.operation == 'none':
-            print "NO OPERATION needed"
-            pass
-        # 
+            logging.debug("NO OPERATION needed")
+           
 
 
-    # XXX so okay? was ist custom delete zb = update mit status=9
+    # #TODO so okay? was ist custom delete zb = update mit status=9
     def insert(self, data_store):
         
         #data_store = self.store.data_store
@@ -597,7 +613,6 @@ class BaseImporter(SourceScan):
         if data_store.data_subitems:
             
             for subitem in data_store.data_subitems.values():
-                #print "SUB insert"
 
                 # wenn sub mit coid schon existiert: loeschen und neu anlegen
                 if self.store.exists(subitem, self.config['db']['subtablename']):
@@ -626,11 +641,11 @@ class BaseImporter(SourceScan):
                 else:
                     self.store.query_create_insert(subitem, subtablename)
                     self.store.insert(subitem)
-                # XXX custom!
-                val = subitem['kontakt']
-                res = self.store.query_create_select_by( 'kontakt', val, subtablename)
+
+                val = subitem[subtablename]
+                res = self.store.query_create_select_by( subtablename, val, subtablename)
                 if res:
-                    print "ENTRY FOUND !!"
+                    logging.debug(" subtable ENTRY FOUND !!")
                     self.store.query_create_delete(key, val, tablename)
                     self.store.delete( )
 

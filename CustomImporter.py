@@ -11,7 +11,7 @@ from xmlflat2db.BaseImporter import BaseImporter, now
 from Datensatz import DataStore
 
 
-# IDEE XXX have a subclassed DataStore 
+# IDEE TODO: have a subclassed DataStore 
 # der weiss wie default fix werte zu setzen sind, erf_time 
 
 class CustomDataStore(DataStore):
@@ -21,7 +21,7 @@ class CustomDataStore(DataStore):
     def init_custom(self):
         self.data['erf_name'] = 'KOFL'
         self.data['kor_name'] = 'KOFL'
-        self.data['status'] = u'3'         # XXX Warn, do not set here.
+        self.data['status'] = u'3'         # TODO: Warn, do not set here.
 
 
 
@@ -37,7 +37,7 @@ class CustomImporter(BaseImporter):
         """ main function for all """
         BaseImporter.run(self)
         
-    # XXX sollte noch rein
+    # TODO: sollte noch rein
     ''' 
     def initDataStore(self):
         self.data_store = CustomDataStore()
@@ -54,15 +54,15 @@ class CustomImporter(BaseImporter):
         status = data_in.status
         if status == u'A':
             self.operation = 'insert_or_update'
-            #self.api_set('status', '3')
+            self.api_set('status', '9')
 
         elif status == u'H':
             self.operation = 'insert_or_update'
-            #self.api_set('status', '3')
+            self.api_set('status', '9')
 
         elif status == u'X':
             self.operation = 'update'
-            #self.api_set('status', '9')
+            self.api_set('status', '3')
 
         self.data_store.set_action( self.operation )
 
@@ -88,7 +88,7 @@ class CustomImporter(BaseImporter):
             val = u'%s_%s_000' %(laborid[0], kundenid.zfill(6))
             self.api_set('transitid', val)
 
-
+    
     def field_handler_strasse(self):
         if self.api_src_key_exists('hausnr'):
             strasse = self.api_get('strasse')
@@ -99,7 +99,19 @@ class CustomImporter(BaseImporter):
                 sp = u' '
             str_hnr = strasse+u' '+self.api_get('hausnr') 
             self.api_set('strasse', str_hnr)
-            
+    
+    """
+    def field_handler_tmp_strasse(self):
+        if self.api_src_key_exists('hausnr'):
+            strasse = self.api_get('strasse')
+            if not strasse:
+                strasse = u''
+            sp = u''
+            if strasse.endswith(u'.'):
+                sp = u' '
+            str_hnr = strasse+u' '+self.api_get('hausnr') 
+            self.api_set_tmp('strasse', str_hnr)
+    """
             
     def field_handler_kundenstatus(self):
         status = self.api_get('status')
@@ -130,16 +142,22 @@ class CustomImporter(BaseImporter):
         """
         fields = sub['fields']
         keyname = sub['fk']
+        kontakttyp_map = {
+            'email'     :   'MD1',
+            'telefon'   :   'TD1',
+            'mobilnr'   :   'HD1',
+            'fax'       :   'FD1',
+        }
 #        keyname = self.config['db']['keyname']
         data_store.table_sub = sub['table']
         # alle 0-4 kontaktmoeglichkeiten
         for field_name in fields:
             # wenn feld in input DS vorhanden
-            # XXX subitem als CustomDataStore ??
+            # TODO: subitem als CustomDataStore ??
             subitem = {}
             if field_name in self.data_in.data:
                 subitem['coid'] = data_store.data['coid']
-                subitem['typ']  = field_name[:3]
+                subitem['typ']  = kontakttyp_map[field_name]
                 subitem['kontakt'] = self.data_in.data[field_name]
                 subitem['status']  = '3'
                 

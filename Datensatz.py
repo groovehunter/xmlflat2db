@@ -2,13 +2,14 @@
 #from types import dict
 #from random import random
 from uuid import uuid1
+import logging as l
 
 
-# XXX aus config
+#TODO: aus config
 attrs_special = [
 'status',
 ]
-# XXX beide klassen zusammenlegen
+# #TODO: beide klassen zusammenlegen
 
 class Datensatz(object):
 
@@ -28,7 +29,6 @@ class Datensatz(object):
 
         for key in val_dict.keys():
             self.data[key] = val_dict[key]
-            #print key, "\t", type(self.data[key])
 
 
     def get_uid(self):
@@ -37,12 +37,11 @@ class Datensatz(object):
 
     def dump(self):
         for key in self.data.keys():
-            print key, "\t" ,
             try:
-                print self.data[key],
+                l.debug(self.data[key])
             except:
-                print "ENC",
-            print "\t\t", type(self.data[key])
+                l.debug("ENC!")
+            l.debug( "\t\t %s" % type(self.data[key]))
 
 
     def as_dict(self):
@@ -65,10 +64,10 @@ class DataStore(object):
         self.table_sub = ''
         self.action = None
         self.uid = None
-        # XXX soll es attribute haben wie:
+        # #TODO: soll es attribute haben wie:
         # _all-not-null-fields-ready?_
         # ready-for-saving ?
-        self.subkey = 'typ'  # XXX is custom!  
+        self.subkey = 'typ'  # #TODO: is custom!  
         
     def init_custom(self):
         """ implement in subclass """
@@ -92,20 +91,18 @@ class DataStore(object):
 
 
     def dump2(self):
-        # XXX remove, custom!
+        # #TODO: remove, custom!
         keys = ['coid','kundenid','laborid']
-        self.dumpw(self.data, keys)
-        #keys = ['coid','typ','kontakt']
-        #self.dumpw(self.data_sub, keys)
-        print "Anzahl subelemente: ", len(self.data_subitems)
-        #print self.data_subitems
+        #self.dumpw(self.data, keys)
+        l.debug( "Anzahl subelemente: %s") % len(self.data_subitems)
+        l.debug( str(self.data_subitems) )
         
 
     def dump(self):
-        print "-------------"
+        l.info("-------------")
         keys = self.data.keys()
         keys.sort()
-        self.dumpw(self.data, keys)
+        #self.dumpw(self.data, keys)
  
 
 

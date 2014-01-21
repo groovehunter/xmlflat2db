@@ -1,6 +1,6 @@
 
 src_main_dir: /path/to/sources
-
+src_pattern:  'filename_prefix_.*\.xml'
 
 DATASET_TAG: customer
 
