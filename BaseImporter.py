@@ -139,8 +139,8 @@ class BaseImporter(SourceScan):
             #raise ImporterError
 
 
-
     def work(self):
+
         """ work on xml data source and call store workers 
             sollte success=True zurueckgeben wenn datei
             zufriedenstellend verarbeitet wurde (was heisst das?)
@@ -186,13 +186,14 @@ class BaseImporter(SourceScan):
                                 self.data_array[ data_in.get_uid() ] = data_in
                             else:
                                 # MAIN CALL
-                                
+                                """ WORKAROUND XXX REMOVE!
                                 if 'kundennr' in data_in.data:
                                     if data_in.data['kundennr'] == u'586131':
                                         continue
                                 if 'kundenid' in data_in.data:
                                     if data_in.data['kundenid'] in [ u'_15470___2', u'592293___2', u'589958___2',u'772814___2']:
                                         continue
+                                """
                                 self.work_ds(data_in)
                                 
                             del data_in
@@ -221,6 +222,16 @@ class BaseImporter(SourceScan):
         self.operation = None
 
         # setzt aktions-feld im data_store
+        # HIER als entwurf: op feld muss vorhanden sein!
+        fields_src_operation = self.config_importer['fields_src_operation']
+        field1 = fields_src_operation[0]
+
+        if not field1 in data_in.data:
+            #l.warn('MUSS feld %s not existing' %self.fields_src_operation)
+            return
+            # WORKAROUND! 
+            data_in.data[ field1 ] = 'A'
+        
         self.set_operation(data_in)
         self.data_in = data_in
 
@@ -512,7 +523,8 @@ class BaseImporter(SourceScan):
             if fn in data:
                 ### XXX NEU: Check !
                 # falls in data_tmp was vorbereitet wurde: 
-                if fn in self.fields_auto_tmp:
+#                if fn in self.config_importer['fields_auto_tmp']:
+                if fn in self.data_tmp.data:
                     val = self.data_tmp.data[fn]
                 else:
                     val = data[fn]

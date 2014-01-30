@@ -68,6 +68,12 @@ class DbStore(object):
         if not res:
             return None
         return res[0]
+    
+
+    def select_all_ids(self):
+        """ liste der key values aller datensaetze """
+
+        self.sql = 'SELECT %s FROM %s' %(self.keyname, self.tablename)        
         
 
     def query_create_select_all(self, keys, uid):

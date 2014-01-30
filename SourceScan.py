@@ -32,6 +32,7 @@ class SourceScan:
     def scan_source_dir(self, src_sub_dir):
         """ ein labor-subdir scannen, 
             @return tuple (filelist, number_files) """
+        l.debug('scan source sub dir: %s' %src_sub_dir )
         if self.config['src_pattern']:
             ls, ll = self.scan_source_dir_regexp(src_sub_dir)
         elif self.config['src_glob']:
@@ -53,11 +54,14 @@ class SourceScan:
         import re
         src_dir = self.src_main_dir + src_sub_dir + '/'
         ls = os.listdir(src_dir)
+        l.debug('all files in %s' %src_dir)
+        l.debug('\n'.join(ls))
         pattern = re.compile(self.config['src_pattern'])
         found = []
         
         for fn in ls:
             m = re.match(pattern, fn)
+            l.debug('matches %s ? - %s' %(fn, str(m)) )
             if m:
                 out = fn, "\t", m.group()
                 l.debug(out)
@@ -105,6 +109,7 @@ class SourceScan:
                 #print num_files
                 todo = True
                 self.src_sub_dirs_todo.append(src_sub_dir)
+        l.debug('src_sub_dirs_todo: %s' % self.src_sub_dirs_todo)
 
         return not todo
 
@@ -127,8 +132,11 @@ class SourceScan:
             #print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
             l.info("STARTING WORK ON FILE: " + fp)
             success = self.work()
+
             if self.test:
                 continue
+            
+            print "STARTING REAL MOVING OF FILES to archive"
             
             if success:
                 # TODO: move file to archiv

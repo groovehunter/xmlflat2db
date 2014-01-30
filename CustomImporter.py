@@ -191,7 +191,25 @@ class CustomImporter(BaseImporter):
 
         self.data_store.set_field('suchname', v2)
         
+    #def field_handler_land(self):
+        
 
+    def validiereLandISO(self, val):
+        """ pruefe ob land in iso3166 format geliefert ist 
+            benoetigt lib:  pip install iso3166 """
+        
+        laender_uebliche = [u'DEU',u'AUT',u'NDL',u'CHE']  # XXX move to init or config
+        
+        if val not in laender_uebliche:
+            from iso3166 import countries
+            try:
+                country = countries.get(val)
+                land_dst = unicode(country.alpha3)
+            except KeyError:
+                land_dst = u''
+                
+        else:
+            land_dst = val
 
-
-
+        return land_dst
+    
