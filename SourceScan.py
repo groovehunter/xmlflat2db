@@ -42,8 +42,10 @@ class SourceScan:
 
     
     def scan_source_dir_glob(self, src_sub_dir):
+        
         glob = self.config['src_glob']
         src_dir = self.src_main_dir + src_sub_dir + '/'
+        
         ls = glob.glob( src_dir + glob )
         ls.sort()
         return (ls, len(ls))
@@ -115,7 +117,13 @@ class SourceScan:
 
 
     def loop_src_dirs(self):
+        """ alle hauptverzeichnisse durchlaufen """
+        # config fuer eine auswahl von subdirs, auch als command line argument moeglich
+        src_subdirs_wanted = self.config['src_subdirs_wanted']
+        
         for src_sub_dir in self.src_dirs:
+            if src_sub_dir not in src_subdirs_wanted:
+                continue
             self.loop_src_dir(src_sub_dir)      
 
 

@@ -37,6 +37,8 @@ class BaseImporter(SourceScan):
         self.operation = None
         # hier muss subclass setzen:
         # store typ
+        self.arg_subdir_wanted = None
+        self.arg_file_wanted = None
 
 
     def load_config(self):
@@ -98,6 +100,13 @@ class BaseImporter(SourceScan):
         """ START: Ein Lauf pro Zeiteinheit (zb 1h) """
         self.init()
         self.scan_source_dirs_all()
+
+        # wenn als cli argument angegegeben, nur dies bearbeiten und stoppen
+        # als "return" hier unschoen.
+        if self.arg_file_wanted:
+            self.src_cur = self.src_main_dir + self.arg_file_wanted
+            self.work()
+            return
 
         self.loop_src_dirs()
         # final check!? 
@@ -217,6 +226,7 @@ class BaseImporter(SourceScan):
             @return success (bool)
         """
         logging.debug( "WORK ON " + str(data_in.dump()) )
+        logging.info("SOURCE INFO: "+self.src_cur)
         # initialisiert data_store und mehr
         self.initDataStore()
         self.operation = None
@@ -440,6 +450,7 @@ class BaseImporter(SourceScan):
 
     def prep_date(self, v):
         """ if data in US format, convert to custom """
+        # TODO! datetime formats - mehrere moegliche angeben in config und hier durchlaufen
         try:
             d = datetime.strptime(v, self.config_importer['format_date_src'])
             return d
@@ -452,6 +463,8 @@ class BaseImporter(SourceScan):
                 d = datetime.strptime(v, dform)
                 return d.strftime(self.config_importer['format_date_dest'])
             except ValueError:
+                
+                
                 logging.error("ValueError")
                 #raise FormatError
                 return None
