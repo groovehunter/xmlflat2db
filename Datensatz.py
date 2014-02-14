@@ -37,11 +37,12 @@ class Datensatz(object):
 
     def dump(self):
         for key in self.data.keys():
+            
             try:
-                l.debug(self.data[key])
+                l.debug(key+"\t"+self.data[key])
             except:
                 l.debug("ENC!")
-            l.debug( "\t\t %s" % type(self.data[key]))
+            #l.debug( "\t\t %s" % type(self.data[key]))
 
 
     def as_dict(self):
