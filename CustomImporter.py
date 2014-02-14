@@ -159,7 +159,7 @@ class CustomImporter(BaseImporter):
                 subitem['coid'] = data_store.data['coid']
                 subitem['typ']  = kontakttyp_map[field_name]
                 subitem['kontakt'] = self.data_in.data[field_name]
-                subitem['status']  = '3'
+                subitem['status']  = '9'
                 
                 data_store.add_data_sub(subitem)
                 
