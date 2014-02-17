@@ -106,6 +106,15 @@ class DataStore(object):
         #self.dumpw(self.data, keys)
  
 
+    def dumpl(self):
+        for key in keys:
+            out += key + "\t\t",
+            try:
+                out += data[key]
+            except:
+                out += "cannot print"
+        l.debug(out)
+
 
     def dumpw(self, data, keys):
         for key in keys:

@@ -502,7 +502,20 @@ class BaseImporter(SourceScan):
             return None
         
         changed = False
+        l.debug('pruefe keys auf aenderung: %s' %str(keys))
+
+        
         for key in keys:
+            # falls feld gar nicht in incoming data, skip it
+            if not key in self.data_in.data:
+                continue
+            
+            if key in self.data_existing.data:
+                l.debug("Existing data : %s " %self.data_existing.data[key] )
+                l.debug("Incoming data : %s " %self.data_in[key])
+            else:
+                return True
+            
             if self.data_existing.data[key] != self.data_in.data[key]:
                 changed = True
         return changed
