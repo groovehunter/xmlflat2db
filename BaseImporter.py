@@ -99,17 +99,22 @@ class BaseImporter(SourceScan):
     def run(self):
         """ START: Ein Lauf pro Zeiteinheit (zb 1h) """
         self.init()
+        # AB HIER logging!
         self.scan_source_dirs_all()
+
+        l.info("Test mode? %s" %str(self.test))
 
         # wenn als cli argument angegegeben, nur dies bearbeiten und stoppen
         # als "return" hier unschoen.
         if self.arg_files_wanted:
             for fn in self.arg_files_wanted:
                 self.src_cur = self.src_main_dir + self.src_sub_dir + '/'+fn
-                print "src_cur: "+self.src_cur
                 #self.src_cur = self.abscwd + '/' +fn
                 self.src_sub_dir_cur = self.src_main_dir + self.src_sub_dir
                 self.source_work()
+                
+#        elif self.arg_subdirs_wanted:
+
         
         else:
             self.loop_src_dirs()
@@ -618,8 +623,12 @@ class BaseImporter(SourceScan):
     def set_operation_final(self, data_store):
         # entscheide ob insert oder update
         #self.data_store.dump()
-        if self.store.exist_keys( data_store, 
-                                self.config_importer['fields_unique'] ):
+        key_existing = self.store.exist_keys( data_store, self.config_importer['fields_unique'] )
+        if key_existing:
+            # 140217 bug: update auf falsche coid
+            self.data_store.set_field(self.store.keyname, key_existing)
+            l.debug("data_store %s wird gesetzt auf %s" %(self.store.keyname, data_store.data[self.store.keyname]) )
+            
             self.operation = 'update'
         else:
             if self.data_in.data['status'] == u'X':      # #TODO cUSTOM!!
@@ -666,8 +675,10 @@ class BaseImporter(SourceScan):
 
     def update(self, data_store):
         """ updaten des gesamten datenstruktur inkl subtable? """
+        l.debug('VOR db-zugriff nochmal ausgabe des key : %s ' %data_store.data[self.store.keyname] )
+        #l.debug('VOR db-zugriff nochmal ausgabe des keyname : %s ' %self.store.keyname )
         self.store.query_create_update(data_store.data, self.config['db']['tablename'])
-        self.store.update(data_store.data)
+        self.store.update(data_store.data)   # TODO! sollte success flag zurueckgeben
         if data_store.data_subitems:
             #print "sub update"
             # wenn sub existiert: update

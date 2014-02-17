@@ -14,25 +14,25 @@ from CustomImporter import CustomImporter
 
 def start():
     parser = argparse.ArgumentParser(description='Start medicarImporter.')
-    parser.add_argument('-t', '--test', nargs='?', dest='test', default='',
+    parser.add_argument('-t', '--test', nargs='?', const='_test', default='',
                        help='if the importer run in test environment (test DB)')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-l', action='append', nargs='*', dest='labore',
-                       help='Die zu verarbeitenden Labor-Unterverzeichnisse')
+    group.add_argument('-l', action='append', nargs='*', dest='subdirs',
+                       help='Die zu verarbeitenden Unterverzeichnisse')
 
-    group.add_argument('-d', action='append', nargs='*', dest='dateien',
+    group.add_argument('-d', action='append', nargs='*', dest='files',
                        help='Die zu verarbeitenden Dateien')
 
     args = parser.parse_args()
 
     mc = CustomImporter()
     mc.test = args.test
-    if args.dateien:
+    if args.files:
         mc.src_sub_dir  = os.path.abspath(os.curdir).split('/')[-1]
-        mc.arg_files_wanted      = args.dateien[0]
+        mc.arg_files_wanted      = args.files[0]
 
-    mc.arg_subdirs_wanted   = args.labore
+    mc.arg_subdirs_wanted   = args.subdirs
     mc.dir_app = abspath_app
 
     mc.run()

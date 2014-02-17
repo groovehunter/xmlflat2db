@@ -22,6 +22,8 @@ class SourceScan:
         ls = os.listdir(self.src_dir)
         if 'archiv' in ls:
             ls.remove('archiv')
+        if 'invalid' in ls:
+            ls.remove('invalid')
         ls.sort()
         self.ls = ls
         if len(ls) == 0:
@@ -63,13 +65,13 @@ class SourceScan:
         
         for fn in ls:
             m = re.match(pattern, fn)
-            l.debug('matches %s ? - %s' %(fn, str(m)) )
+            l.debug('matches %s ? ' %fn)
             if m:
-                out = fn, "\t", m.group()
+                out = "\t", m.group()
                 l.debug(out)
                 found.append(src_dir + fn)
             else:
-                print fn
+                l.debug( " - NEIN" )
 
         found.sort()
         return (found, len(found))
@@ -119,7 +121,8 @@ class SourceScan:
     def loop_src_dirs(self):
         """ alle hauptverzeichnisse durchlaufen """
         # config fuer eine auswahl von subdirs, auch als command line argument moeglich
-        src_subdirs_wanted = self.arg_subdirs_wanted or self.config['src_subdirs_wanted']
+        src_subdirs_wanted = self.arg_subdirs_wanted[0] or self.config['src_subdirs_wanted']
+        l.info("gewuenschte verzeichnisse: %s" %src_subdirs_wanted)
         
         for src_sub_dir in self.src_dirs:
             if src_sub_dir not in src_subdirs_wanted:
