@@ -9,7 +9,7 @@ from lxml.etree import iterparse, XMLSyntaxError, ParseError
 import yaml
 from datetime import datetime
 from datetime import date
-import logging
+import logging as l
 
 
 class MissingDataException(Exception): pass
@@ -37,8 +37,8 @@ class BaseImporter(SourceScan):
         self.operation = None
         # hier muss subclass setzen:
         # store typ
-        self.arg_subdir_wanted = None
-        self.arg_file_wanted = None
+        self.arg_subdirs_wanted = None
+        self.arg_files_wanted = None
 
 
     def load_config(self):
@@ -74,16 +74,16 @@ class BaseImporter(SourceScan):
         self.load_config()
         # setzt vorraus dass store gesetzt ist
         #self.config_set(self.config)
-        llmap = {   'debug' :   logging.DEBUG,
-                    'info':     logging.INFO,
+        llmap = {   'debug' :   l.DEBUG,
+                    'info':     l.INFO,
                 }
         today = date.today()
         today_fmt =today.strftime('%y%m%d') 
         logfile = self.config['logfile']+ '_' + today_fmt +'.log'
         print logfile
-        logging.basicConfig(filename= logfile, 
+        l.basicConfig(filename= logfile, 
                             level= llmap[self.config['loglevel']])
-        logging.info('Started importer')
+        l.info('Started importer')
 
 
     def init_db(self, config):
@@ -103,18 +103,23 @@ class BaseImporter(SourceScan):
 
         # wenn als cli argument angegegeben, nur dies bearbeiten und stoppen
         # als "return" hier unschoen.
-        if self.arg_file_wanted:
-            self.src_cur = self.src_main_dir + self.arg_file_wanted
-            self.work()
-            return
+        if self.arg_files_wanted:
+            for fn in self.arg_files_wanted:
+                self.src_cur = self.src_main_dir + self.src_sub_dir + '/'+fn
+                print "src_cur: "+self.src_cur
+                #self.src_cur = self.abscwd + '/' +fn
+                self.src_sub_dir_cur = self.src_main_dir + self.src_sub_dir
+                self.source_work()
+        
+        else:
+            self.loop_src_dirs()
 
-        self.loop_src_dirs()
-        # final check!? 
-        self.report_manual_todo()
-        all_done = self.no_files_left()
-        print "ALL DONE? ", str(all_done)
-        print "LEFT: "+str(self.src_sub_dirs_todo)
-        logging.info("LEFT: "+str(self.src_sub_dirs_todo))
+            # final check!? 
+            self.report_manual_todo()
+            all_done = self.no_files_left()
+            print "ALL DONE? ", str(all_done)
+            print "LEFT: "+str(self.src_sub_dirs_todo)
+            l.info("LEFT: "+str(self.src_sub_dirs_todo))
 
 
     def set_storage(self, typ):
@@ -214,10 +219,10 @@ class BaseImporter(SourceScan):
                 
             except XMLSyntaxError:
                 self.src_failed.append(self.src_cur)
-                logging.warning( "DATASET FAILED "+self.src_cur )
+                l.warning( "DATASET FAILED "+self.src_cur )
                 src_success = False
         
-        logging.debug( "src_success: "+self.src_cur)
+        l.debug( "src_success: "+self.src_cur)
         return src_success
 
 
@@ -225,8 +230,8 @@ class BaseImporter(SourceScan):
         """ steuert einen durchgang komplett 
             @return success (bool)
         """
-        logging.debug( "WORK ON " + str(data_in.dump()) )
-        logging.info("SOURCE INFO: "+self.src_cur)
+        l.debug( "WORK ON " + str(data_in.dump()) )
+        l.info("SOURCE INFO: "+self.src_cur)
         # initialisiert data_store und mehr
         self.initDataStore()
         self.operation = None
@@ -282,7 +287,7 @@ class BaseImporter(SourceScan):
         # g) felder fuer subtabellen, inkl operation ausfuehren (?)
         self.data_store = self.fields_to_subtables(self.data_store)
 
-        logging.debug( self.data_store.dump() )
+        l.debug( self.data_store.dump() )
         self.fields_encode_all()
         ### === storage 
         # setzt op in data_store auch?
@@ -465,7 +470,7 @@ class BaseImporter(SourceScan):
             except ValueError:
                 
                 
-                logging.error("ValueError")
+                l.error("ValueError")
                 #raise FormatError
                 return None
                 
@@ -548,7 +553,7 @@ class BaseImporter(SourceScan):
                     self.data_store.set_field(fn, sval)
             else:   
                 pass
-                logging.debug( "FIELD TRANSFER not in data_in: %s" %fn)
+                l.debug( "FIELD TRANSFER not in data_in: %s" %fn)
 
 
     def fields_to_subtables(self, data_store):
@@ -621,7 +626,7 @@ class BaseImporter(SourceScan):
                 self.operation = 'none'
             else:
                 self.operation = 'insert'
-        logging.info("operation final: %s " % self.operation)
+        l.info("operation final: %s " % self.operation)
         
 
     def operate(self, data_store):
@@ -635,7 +640,7 @@ class BaseImporter(SourceScan):
         elif self.operation == 'delete':
             self.delete(data_store)
         elif self.operation == 'none':
-            logging.debug("NO OPERATION needed")
+            l.debug("NO OPERATION needed")
            
 
 
@@ -681,7 +686,7 @@ class BaseImporter(SourceScan):
                 val = subitem[subtablename]
                 res = self.store.query_create_select_by( subtablename, val, subtablename)
                 if res:
-                    logging.debug(" subtable ENTRY FOUND !!")
+                    l.debug(" subtable ENTRY FOUND !!")
                     self.store.query_create_delete(key, val, tablename)
                     self.store.delete( )
 
