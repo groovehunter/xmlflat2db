@@ -16,7 +16,7 @@ class SourceScan:
 
 
     def scan_sources(self):
-        """ scan dir of cur set labor 
+        """ scan dir of cur set subdir 
         """
         self.src_dir = self.src_main_dir + self.src_labor + '/'
         ls = os.listdir(self.src_dir)
@@ -32,7 +32,7 @@ class SourceScan:
 
 
     def scan_source_dir(self, src_sub_dir):
-        """ ein labor-subdir scannen, 
+        """ ein subdir scannen, 
             @return tuple (filelist, number_files) """
         l.debug('scan source sub dir: %s' %src_sub_dir )
         if self.config['src_pattern']:
@@ -119,9 +119,13 @@ class SourceScan:
 
 
     def loop_src_dirs(self):
-        """ alle hauptverzeichnisse durchlaufen """
+        """ alle hauptverzeichnisse durchlaufen, ausser nicht in liste der gewuenschten """
         # config fuer eine auswahl von subdirs, auch als command line argument moeglich
-        src_subdirs_wanted = self.arg_subdirs_wanted[0] or self.config['src_subdirs_wanted']
+         
+        if self.arg_subdirs_wanted:
+            src_subdirs_wanted = self.arg_subdirs_wanted[0]
+        else:
+            src_subdirs_wanted = self.config['src_subdirs_wanted']
         l.info("gewuenschte verzeichnisse: %s" %src_subdirs_wanted)
         
         for src_sub_dir in self.src_dirs:
@@ -134,18 +138,23 @@ class SourceScan:
         """ verarbeite alle files in sub dir """
         ls, num = self.scan_source_dir(src_sub_dir)
         self.src_sub_dir_cur = self.src_main_dir + src_sub_dir
+        self.src_sub_dir = src_sub_dir
 
-        for fp in ls:
+        for fp in ls:   # fp ist absoluter pfad
+            
             # TODO! replace loop content with source_work() call
-            #self.src_cur = src_sub_dir_cur + '/' + fn
+            # OK hier:
             self.src_cur = fp
+            self.source_work()
+            """
+            #self.src_cur = src_sub_dir_cur + '/' + fn
             self.src_cur_archive = self.src_sub_dir_cur + '/archiv/' + os.path.basename(fp)
             #print "STARTING WORK ON FILE: "+src_sub_dir+'/'+fn
             l.info("STARTING WORK ON FILE: " + fp)
             success = self.work()
 
-            if self.test:
-                continue
+            #if self.test:  # auskommentiert okay wenn eigenes source dir und archiv dir
+            #    continue
             
             print "STARTING REAL MOVING OF FILES to archive"
             
@@ -161,7 +170,7 @@ class SourceScan:
             else:
                 l.debug( "file failed %s " % self.src_cur)
             sleep(1)
-
+            """
     
     # src_cur           # absoluter pfad zum aktuellen source file
     # src_sub_dir       # unterverzeichnis solo
@@ -184,8 +193,8 @@ class SourceScan:
 
         success = self.work()
 
-        if self.test:
-            return
+        #if self.test:
+        #    return
         
         print "STARTING REAL MOVING OF FILES to archive" 
         

@@ -65,7 +65,6 @@ class BaseImporter(SourceScan):
         #self.config_set(self.config)   # stuff #TODO
 
         self.src_main_dir   = self.config['src_main_dir']
-        #self.src_labor      = 'BIOS'
 
 
     def init(self):
@@ -76,11 +75,12 @@ class BaseImporter(SourceScan):
         #self.config_set(self.config)
         llmap = {   'debug' :   l.DEBUG,
                     'info':     l.INFO,
+                    'warning':  l.WARNING,
                 }
         today = date.today()
         today_fmt =today.strftime('%y%m%d') 
         logfile = self.config['logfile']+ '_' + today_fmt +'.log'
-        print logfile
+        print "LOGFILE: "+logfile
         l.basicConfig(filename= logfile, 
                             level= llmap[self.config['loglevel']])
         l.info('Started importer')

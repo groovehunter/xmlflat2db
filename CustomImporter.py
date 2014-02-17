@@ -203,8 +203,12 @@ class CustomImporter(BaseImporter):
         if val not in laender_uebliche:
             from iso3166 import countries
             try:
-                country = countries.get(val)
-                land_dst = unicode(country.alpha3)
+                if val:     # AttributeError: 'NoneType' object has no attribute 'upper'
+                    country = countries.get(val)
+                    land_dst = unicode(country.alpha3)
+                else:
+                    return u'DEU' # TODO!  oder hier default ?
+
             except KeyError:
                 land_dst = u''
                 
