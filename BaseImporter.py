@@ -197,6 +197,7 @@ class BaseImporter(SourceScan):
                                 data[child.tag] = val
 
                             data_in = Datensatz()
+                            data_in.use = 'Incoming Data'
                             data_in.setze_per_dict(data)
                             data_in.dump()
                             self.id_tmp += 1
@@ -308,6 +309,7 @@ class BaseImporter(SourceScan):
     def initDataStore(self):
         # setze haupt-datensatz
         self.data_store = DataStore()
+        self.data_store.use = 'Outgoing Data'
         # init. zwischen-speicher DS
         self.data_tmp = DataStore()
         # 
@@ -460,25 +462,21 @@ class BaseImporter(SourceScan):
 
     def prep_date(self, v):
         """ if data in US format, convert to custom """
-        # TODO! datetime formats - mehrere moegliche angeben in config und hier durchlaufen
-        try:
-            d = datetime.strptime(v, self.config_importer['format_date_src'])
-            return d
-
-        except ValueError:
-        
+        # datetime formats - mehrere moegliche angeben in config und hier durchlaufen
+        format_date_src = self.config_importer['format_date_src']
+        for format in format_date_src:
+            #l.debug("Trying format on current date field... "+format )
             try:
-                # #TODO match independent of time zone shift!
-                dform = '%Y-%m-%dT%H:%M:%S+01:00'
-                d = datetime.strptime(v, dform)
-                return d.strftime(self.config_importer['format_date_dest'])
+                d = datetime.strptime(v, format)
+                if d:
+                    val_out = d.strftime(self.config_importer['format_date_dest'])
+                    l.debug("Found format %s in current field, output is %s " %(format,val_out) )
+                    #return val_out
+                    return d
             except ValueError:
-                
-                
                 l.error("ValueError")
-                #raise FormatError
-                return None
-                
+            #    return None
+                    
 
     def get_existing(self):
         """ load existing data from DB, return True or False for match """
@@ -689,6 +687,7 @@ class BaseImporter(SourceScan):
     def update(self, data_store):
         """ updaten des gesamten datenstruktur inkl subtable? """
         l.debug('VOR db-zugriff nochmal ausgabe des key : %s ' %data_store.data[self.store.keyname] )
+        l.debug(data_store.dumpl())
         #l.debug('VOR db-zugriff nochmal ausgabe des keyname : %s ' %self.store.keyname )
         self.store.query_create_update(data_store.data, self.config['db']['tablename'])
         self.store.update(data_store.data)   # TODO! sollte success flag zurueckgeben
