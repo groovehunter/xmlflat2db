@@ -15,6 +15,7 @@ class Datensatz(object):
 
     def __init__(self):
         self.data = {}
+        self.use = ''
         
         if not hasattr( self, 'uid'):
             self.uid = uuid1().get_hex()
@@ -36,8 +37,8 @@ class Datensatz(object):
 
 
     def dump(self):
+        l.debug('----- '+self.use)
         for key in self.data.keys():
-            
             try:
                 l.debug(key+"\t"+self.data[key])
             except:
@@ -65,6 +66,7 @@ class DataStore(object):
         self.table_sub = ''
         self.action = None
         self.uid = None
+        self.use = ''
         # #TODO: soll es attribute haben wie:
         # _all-not-null-fields-ready?_
         # ready-for-saving ?
@@ -79,6 +81,7 @@ class DataStore(object):
 
 
     def set_field(self, key, val):
+        l.debug('Setze in %s das Feld %s auf %s ' %(self.use, key, val) )
         self.data[key] = val
 
     def add_data_sub(self, data_sub):
@@ -100,23 +103,27 @@ class DataStore(object):
         
 
     def dump(self):
-        l.info("-------------")
+        l.info("------------- "+self.use )
         keys = self.data.keys()
         keys.sort()
         #self.dumpw(self.data, keys)
  
 
     def dumpl(self):
-        for key in keys:
-            out += key + "\t\t",
+        out = ''
+        for key in self.data.keys():
+            out += key
+            out += "\t\t"
             try:
-                out += data[key]
+                out += self.data[key]
             except:
                 out += "cannot print"
+            out += "\n"
         l.debug(out)
 
 
     def dumpw(self, data, keys):
+        l.info("------------- "+self.use )
         for key in keys:
             print key + "\t\t",
             try:

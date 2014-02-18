@@ -188,15 +188,13 @@ class DbStore(object):
     def query_create_update(self, data, tablename):
         """ prepare update query, keys are from source dataset """
         keys_query = data.keys()
-        l.debug( str(keys_query) )
+        l.debug( "KEYS for query: "+str(keys_query) )
         keys_query.remove(self.keyname)
         keys_query.sort()
         e = ''
         for key in keys_query:
-            #t = "%s='%s'," %(key,self.data_store.data[key])
             t = "%s=:%s, " %(key,key)
             e += t
-        #e = e.rstrip(',')
         e= e[:-2]
 
         self.sql = 'UPDATE %s SET %s WHERE %s=%s' %(
