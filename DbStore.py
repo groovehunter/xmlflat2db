@@ -173,7 +173,7 @@ class DbStore(object):
     def update(self, data):
         """ speicher in DB """
         cursor = self.conn.cursor()
-        l.debug(self.sql)
+        #l.debug(self.sql)
         try:
             cursor.execute( self.sql, data )
             return True

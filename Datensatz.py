@@ -42,7 +42,7 @@ class Datensatz(object):
             try:
                 l.debug(key+"\t"+self.data[key])
             except:
-                l.debug("ENC!")
+                l.debug(key+" - ENCODING!")
             #l.debug( "\t\t %s" % type(self.data[key]))
 
 
