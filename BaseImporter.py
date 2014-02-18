@@ -42,27 +42,32 @@ class BaseImporter(SourceScan):
 
 
     def load_config(self):
-        self.config_array = {}
+        """ config files laden und in dict-strukturen des importers laden """
+        # rewrite: Ein environment-spezifisches config file
+        # importer field settings soll ein file fuer alle environments gemeinsam werden
 
-        cfgs = [
-            'config_importer.yml',
-            'config_main.yml'
-        ]
-        #pjdir = os.path.abspath(os.path.dirname(__file__))
+        cfg_common          = [ 'config_importer' ]
+        cfg_env_specific    = [ 'config' ]
+        envs    = [ '_test', '' ]
 
-        for fn in cfgs:
-            config_fpath = '%s/config_%s%s/%s' %(
-                    self.dir_app, self.app_id, self.test, fn) 
+        for fn in cfg_common:
+            # /pfad/zur/app/config_app-name/cfg-name.yml
+            config_fpath = '%s/config_%s/%s.yml' %(self.dir_app, self.app_id, fn) 
             #print config_fpath
             config_txt = file(config_fpath,'r').read()
             config = yaml.load(config_txt)
             cfgkey = fn.split('.')[0]
-            self.config_array[cfgkey] = config
-
-        self.config         = self.config_array['config_main']
-        self.config_importer= self.config_array['config_importer'] 
-
-        #self.config_set(self.config)   # stuff #TODO
+            setattr(self, fn, config)
+            
+        for fn in cfg_env_specific:
+            # /pfad/zur/app/config_app-name/cfg-name_env-id.yml
+            config_fpath = '%s/config_%s/%s%s.yml' %(self.dir_app, self.app_id, fn, self.test) 
+            print config_fpath
+            config_txt = file(config_fpath,'r').read()
+            config = yaml.load(config_txt)
+            cfgkey = fn.split('.')[0]
+            
+            setattr(self, fn, config)
 
         self.src_main_dir   = self.config['src_main_dir']
 
